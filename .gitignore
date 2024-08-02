@@ -1,0 +1,6 @@
+*.pdf
+*.xlsx
+*.csv
+*.zip
+literature/
+__pycache__/
