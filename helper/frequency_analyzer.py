@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.signal as signal
+from scipy.ndimage import gaussian_filter1d
 
 class FrequencyAnalyzer:
     """
@@ -121,18 +122,20 @@ class FrequencyAnalyzer:
             P3[k] = np.prod(1 / S_corr[k, 1:])
         return P1, P2, P3
 
-    def identify_peaks(self, freqs, S, band=(8, 24), distance=10):
+    def identify_peaks(self, freqs, S, band=(8, 24), distance=10, sigma=14):
         """
-        Identifies peaks in the signal S within a specified frequency band.
+        Identifies peaks in the signal S within a specified frequency band, and refines the peak positions 
+        by checking the non-smoothed data within a 1 Hz range before and after each identified peak.
 
         Parameters:
             freqs (numpy.ndarray): Array of frequencies.
             S (numpy.ndarray): Signal data from which to identify peaks.
             band (tuple): A tuple specifying the frequency band (min, max) within which to find peaks.
             distance (int): Minimum distance between peaks (in terms of number of data points).
+            sigma (float): Standard deviation for Gaussian smoothing.
 
         Returns:
-            numpy.ndarray: Indices of the peaks found within the specified frequency band.
+            numpy.ndarray: Indices of the refined peaks found within the specified frequency band.
         """
         # Extract indices within the specified frequency band
         ban_min, band_max = band
@@ -142,12 +145,33 @@ class FrequencyAnalyzer:
         band_freqs = freqs[min_idx:max_idx + 1]
         band_S = S[min_idx:max_idx + 1]
         
-        # Identify peaks within the band
-        peaks, _ = signal.find_peaks(band_S, distance=distance)
+        # Smooth the signal and identify peaks in the smoothed signal
+        S_smooth = gaussian_filter1d(band_S, sigma=sigma)
+        smooth_peaks, _ = signal.find_peaks(S_smooth, distance=distance)
         
-        # Adjust peak indices to match the original frequency array
-        peaks = peaks + min_idx
-        return peaks
+        # Convert 1 Hz range to number of samples
+        num_samples_1hz = int(np.round(1 / (freqs[1] - freqs[0])))
+       
+        refined_peaks = []
+        for peak in smooth_peaks:
+            # Calculate the range to check in the original signal
+            peak_freq = band_freqs[peak]
+            search_range = (max(peak - num_samples_1hz, 0), min(peak + num_samples_1hz, len(band_S) - 1))
+
+            # Extract the relevant section from the original signal
+            original_section = S[min_idx:max_idx + 1][search_range[0]:search_range[1] + 1]
+            original_freqs_section = band_freqs[search_range[0]:search_range[1] + 1]
+
+            # Find the peak in the original data section
+            refined_peak = np.argmax(original_section) #signal.find_peaks(original_section, distance=distance)
+            
+            # Map new peak back to the global index
+            refined_peaks.append(search_range[0] + refined_peak + min_idx)
+
+        # Convert list to numpy array and ensure unique peaks
+        refined_peaks = np.unique(np.array(refined_peaks))
+        
+        return refined_peaks
 
     def extract_indices_within_band(self, freqs, ban_min, band_max):
         """

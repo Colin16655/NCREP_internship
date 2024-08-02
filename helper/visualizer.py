@@ -1,6 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from sklearn.decomposition import PCA
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+from scipy.interpolate import CubicSpline
+from scipy.interpolate import UnivariateSpline
+from scipy.ndimage import gaussian_filter1d
+
 
 class Visualizer:
     def __init__(self, time, output_dir="figures"):
@@ -151,7 +158,7 @@ class Visualizer:
         fig.tight_layout()
         self._save_figure(fig, "SVD_results", folder_name)
 
-    def plot_pp_index(self, freqs, P1, P2, P3, peaks, folder_name=""):
+    def plot_pp_indexc(self, freqs, P1, P2, P3, peaks, folder_name=""):
         """
         Plots the PP indices as a function of frequency and saves the figure.
 
@@ -177,3 +184,102 @@ class Visualizer:
 
         fig.tight_layout()
         self._save_figure(fig, "PP_indices_results", folder_name)
+
+    def plot_pp_index(self, freqs, P1, P2, P3, peaks, folder_name="", sigma=14):
+        """
+        Plots the PP indices as a function of frequency and saves the figure.
+
+        Parameters:
+            freqs (numpy.ndarray): The frequency array.
+            P1 (numpy.ndarray): The first PP index.
+            P2 (numpy.ndarray): The second PP index.
+            P3 (numpy.ndarray): The third PP index.
+            peaks (numpy.ndarray): Indices of the peak points.
+            folder_name (str): Name of the folder where the figure will be saved. Defaults to "".
+            sigma (float): Standard deviation for Gaussian kernel. Defaults to 2.
+        """
+        # Apply Gaussian smoothing
+        P1_smooth = gaussian_filter1d(P1, sigma=sigma)
+        P2_smooth = gaussian_filter1d(P2, sigma=sigma)
+        P3_smooth = gaussian_filter1d(P3, sigma=sigma)
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+
+        # Plot non-smoothed curves
+        ax.semilogy(freqs, P1, label="P1 (Raw)", linestyle='dotted', color='orange')
+        ax.semilogy(freqs, P2, label="P2 (Raw)", linestyle='dotted', color='green')
+        ax.semilogy(freqs, P3, label="P3 (Raw)", linestyle='dotted', color='blue')
+
+        # Plot smoothed curves
+        ax.semilogy(freqs, P1_smooth, label="P1 (Smoothed)", linestyle='solid', color='orange')
+        ax.semilogy(freqs, P2_smooth, label="P2 (Smoothed)", linestyle='solid', color='green')
+        ax.semilogy(freqs, P3_smooth, label="P3 (Smoothed)", linestyle='solid', color='blue')
+
+        # Scatter plot for P3 at the peak points
+        ax.scatter(freqs[peaks], P3[peaks], color='red', marker='x', label='Peaks')
+
+        ax.set_ylabel("PP index")
+        ax.set_xlabel("Frequency [Hz]")
+        ax.legend()
+        ax.set_xlim(8, 24)
+        ax.grid(True)
+
+        fig.tight_layout()
+        self._save_figure(fig, "PP_indices_results", folder_name)
+
+    def plot_PCA(self, data, folder_name=""):
+        # Apply PCA
+        pca = PCA(n_components=3)  # For 3D visualization
+        principal_components_3d = pca.fit_transform(data)
+
+        # Extract the first 2 principal components for 2D visualization
+        pca_2d = PCA(n_components=2)
+        principal_components_2d = pca_2d.fit_transform(data)
+
+        # Plotting 3D PCA
+        fig = plt.figure(figsize=(12, 6))
+
+        # 3D plot
+        ax = fig.add_subplot(121, projection='3d')
+        ax.scatter(principal_components_3d[:, 0], principal_components_3d[:, 1], principal_components_3d[:, 2], c='r', marker='o')
+        ax.set_xlabel('PC1')
+        ax.set_ylabel('PC2')
+        ax.set_zlabel('PC3')
+        ax.set_title('3D PCA of Mode Shapes')
+
+        # 2D plot
+        ax2 = fig.add_subplot(122)
+        ax2.scatter(principal_components_2d[:, 0], principal_components_2d[:, 1], c='b', marker='o')
+        ax2.set_xlabel('PC1')
+        ax2.set_ylabel('PC2')
+        ax2.set_title('2D PCA of Mode Shapes')
+
+        fig.tight_layout()
+        self._save_figure(fig, "PCA", folder_name)
+
+    def plot_MAC_matrix(self, MAC, mode_frequency, peaks, folder_name=""):
+        # Create the plot
+        fig, ax = plt.subplots(figsize=(8, 8))
+        cax = ax.imshow(MAC, cmap='viridis')
+
+        # Add color bar
+        cbar = fig.colorbar(cax)
+        cbar.set_label('MAC Value')
+
+        # Set ticks and labels based on the modal frequencies
+        ax.set_xticks(np.arange(len(peaks)))
+        ax.set_yticks(np.arange(len(peaks)))
+        ax.set_xticklabels([f"{freq:.2f} Hz" for freq in mode_frequency])
+        ax.set_yticklabels([f"{freq:.2f} Hz" for freq in mode_frequency])
+
+        # Rotate the tick labels for better readability if needed
+        plt.xticks(rotation=45)
+
+        # Add titles and labels
+        ax.set_title("MAC Matrix")
+        ax.set_xlabel("Mode Frequency [Hz]")
+        ax.set_ylabel("Mode Frequency [Hz]")
+
+        # Show plot
+        fig.tight_layout()
+        self._save_figure(fig, "MAC_matrix", folder_name)

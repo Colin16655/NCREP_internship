@@ -3,8 +3,7 @@ from helper.data_loader import DataLoader
 from helper.signal_transformer import SignalTransformer
 from helper.frequency_analyzer import FrequencyAnalyzer
 from helper.visualizer import Visualizer
-from sklearn.decomposition import PCA
-from mpl_toolkits.mplot3d import Axes3D
+
 
 # Set rcParams to customize plot appearance
 import matplotlib.pyplot as plt
@@ -47,7 +46,7 @@ detrended_data = transformer.detrend_and_scale()
 location = "Lello_Jul23_stairs"
 time_window_size = 600 * len(file_paths)
 processing_method = "Welch"
-nperseg = 8192*8 # 256, 512, 1024, 2048, 4096, 8192
+nperseg = 2048 # 256, 512, 1024, 2048, 4096, 8192
 folder_name = f"loc_{location}_wind_{time_window_size}_meth_{processing_method}_nperseg_{nperseg}"
 
 visualizer = Visualizer(time, output_dir="results")
@@ -64,8 +63,9 @@ selected_indices = [3, 4, 5, 6]  # Indices of the selected sensors : stair
 
 # Compute PSD using Welch's method
 fs = 1 / np.mean(np.diff(time))
+# print("Sampling frequency:", fs)
 freqs, psd_matrix = analyzer.compute_psd_matrix(fs, selected_indices, nperseg=nperseg)
-
+# print(np.mean(np.diff(freqs)), np.mean(np.diff(time)))
 # Visualize the PSDs
 visualizer.plot_psd(freqs, psd_matrix, folder_name, labels=labels)
 
@@ -88,39 +88,9 @@ peaks = analyzer.identify_peaks(freqs, P3, distance=1)
 visualizer.plot_pp_index(freqs, P1, P2, P3, peaks, folder_name)
 
 mode_frequency, mode_shape = analyzer.identify_mode_shapes(freqs, U_PSD, peaks)
-print(np.array(mode_shape).shape)
 print(f"Identified mode frequencies: {mode_frequency} Hz")
-print(mode_shape)
-MAC = np.zeros((len(peaks), len(peaks)))
-for i in range(len(peaks)):
-    for j in range(len(peaks)):
-        MAC[i, j] = analyzer.compute_mac(mode_shape[i], mode_shape[j])
 
-# Create the plot
-fig, ax = plt.subplots(figsize=(8, 8))
-cax = ax.imshow(MAC, cmap='viridis')
 
-# Add color bar
-cbar = fig.colorbar(cax)
-cbar.set_label('MAC Value')
-
-# Set ticks and labels based on the modal frequencies
-ax.set_xticks(np.arange(len(peaks)))
-ax.set_yticks(np.arange(len(peaks)))
-ax.set_xticklabels([f"{freq:.2f} Hz" for freq in mode_frequency])
-ax.set_yticklabels([f"{freq:.2f} Hz" for freq in mode_frequency])
-
-# Rotate the tick labels for better readability if needed
-plt.xticks(rotation=45)
-
-# Add titles and labels
-ax.set_title("MAC Matrix")
-ax.set_xlabel("Mode Frequency [Hz]")
-ax.set_ylabel("Mode Frequency [Hz]")
-
-# Show plot
-plt.tight_layout()
-visualizer._save_figure(fig, "MAC_matrix", folder_name)
 # nperseg_list = [256, 512, 1024, 2048, 4096, 8192]
 # fig, ax = plt.subplots(len(nperseg_list), 1, figsize=(5, 20))
 # for i, nperseg in enumerate(nperseg_list):
@@ -150,34 +120,12 @@ visualizer._save_figure(fig, "MAC_matrix", folder_name)
 # fig.tight_layout()
 # visualizer._save_figure(fig, "PP_index_compare_results", folder_name)
 
+# Visualize the PCA of the mode shapes
+visualizer.plot_PCA(mode_shape, folder_name)
 
-data = mode_shape
-
-# Apply PCA
-pca = PCA(n_components=3)  # For 3D visualization
-principal_components_3d = pca.fit_transform(data)
-
-# Extract the first 2 principal components for 2D visualization
-pca_2d = PCA(n_components=2)
-principal_components_2d = pca_2d.fit_transform(data)
-
-# Plotting 3D PCA
-fig = plt.figure(figsize=(12, 6))
-
-# 3D plot
-ax = fig.add_subplot(121, projection='3d')
-ax.scatter(principal_components_3d[:, 0], principal_components_3d[:, 1], principal_components_3d[:, 2], c='r', marker='o')
-ax.set_xlabel('PC1')
-ax.set_ylabel('PC2')
-ax.set_zlabel('PC3')
-ax.set_title('3D PCA of Mode Shapes')
-
-# 2D plot
-ax2 = fig.add_subplot(122)
-ax2.scatter(principal_components_2d[:, 0], principal_components_2d[:, 1], c='b', marker='o')
-ax2.set_xlabel('PC1')
-ax2.set_ylabel('PC2')
-ax2.set_title('2D PCA of Mode Shapes')
-
-plt.tight_layout()
-visualizer._save_figure(fig, "PCA", folder_name)
+# Visualize the MAC matrix of the mode shapes
+MAC = np.zeros((len(peaks), len(peaks)))
+for i in range(len(peaks)):
+    for j in range(len(peaks)):
+        MAC[i, j] = analyzer.compute_mac(mode_shape[i], mode_shape[j])
+visualizer.plot_MAC_matrix(MAC, mode_frequency, peaks, folder_name)
