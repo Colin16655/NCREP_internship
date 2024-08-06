@@ -4,6 +4,7 @@ from helper.signal_transformer import SignalTransformer
 from helper.frequency_analyzer import FrequencyAnalyzer
 from helper.visualizer import Visualizer
 from scipy.ndimage import gaussian_filter1d
+import PyOMA as oma
 
 
 # Set rcParams to customize plot appearance

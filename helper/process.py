@@ -4,6 +4,7 @@ from helper.signal_transformer import SignalTransformer
 from helper.frequency_analyzer import FrequencyAnalyzer
 from helper.visualizer import Visualizer
 from scipy.ndimage import gaussian_filter1d
+import PyOMA as oma
 
 def get_vibration_frequencies(file_paths, location):
     # Load the data
@@ -79,3 +80,48 @@ def get_vibration_frequencies(file_paths, location):
             MAC[i, j] = analyzer.compute_mac(mode_shape[i], mode_shape[j])
     # visualizer.plot_MAC_matrix(MAC, mode_frequency, peaks, folder_name)
     return mode_frequency
+
+def get_vibration_frequencies_pyoma(file_paths, location):
+    """
+    Detects vibration frequencies using PyOMA's FDD method.
+
+    Parameters:
+        file_paths (list): List of file paths to process.
+        fs (float): Sampling frequency of the data.
+
+    Returns:
+        list: List of detected frequencies for each file.
+    """
+    loader = DataLoader(file_paths)
+    time, data = loader.load_data()
+    print("Time shape:", time.shape)
+    print("Data shape:", data.shape)
+
+    # Define scaling factors for the sensor data
+    scaling_factors = np.array([0.4035*1000, 0.4023*1000, 0.4023*1000, 0.4023*1000, 0.4015*1000, 0.4014*1000, 0.4007*1000, 0.4016*1000])
+
+    # Transform the data
+    transformer = SignalTransformer(time, data, scaling_factors)
+    detrended_data = transformer.detrend_and_scale()
+
+    selected_indices = [3, 4, 5, 6]  # Indices of the selected sensors : stair
+
+    # Compute PSD using Welch's method
+    fs = 1 / np.mean(np.diff(time))
+
+    all_frequencies = []
+    
+    data = detrended_data[:, selected_indices]
+
+    # Apply FDD method directly
+    FDD = oma.FDDsvp(data, fs, )
+
+    # Define approximate peaks identified from the plot
+    FreQ = [11.29, 16.05, 22.54]
+
+    # Extract the modal properties
+    Res_FDD = oma.FDDmodEX(FreQ, FDD[1])
+    Res_EFDD = oma.EFDDmodEX(FreQ, FDD[1], method='EFDD')
+    # Res_FSDD = oma.EFDDmodEX(FreQ, FDD[1], method='FSDD', npmax = 35, MAClim=0.95)
+
+    return Res_FDD['Frequencies'], Res_EFDD['Frequencies']#, Res_FSDD['Frequencies']

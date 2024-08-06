@@ -291,7 +291,7 @@ class Visualizer:
         # Set y-limits based on min and max values within the frequency range
         ax0.set_ylim(min_val, max_val)
         ax0.set_ylabel("Singular Value")
-        ax0.set_xlim(freq_min, freq_max)
+        # ax0.set_xlim(freq_min, freq_max)
         if plot_li:
             ax[1].set_ylim(min_val, max_val)
             ax[1].set_xlabel("Frequency [Hz]")
