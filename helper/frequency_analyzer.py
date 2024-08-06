@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.signal as signal
 from scipy.ndimage import gaussian_filter1d
+import math
 
 class FrequencyAnalyzer:
     """
@@ -172,6 +173,107 @@ class FrequencyAnalyzer:
         refined_peaks = np.unique(np.array(refined_peaks))
         
         return refined_peaks
+
+    def identify_peaks_bis(self, freqs, PP, PSD_sigma, band=(8, 24), distance=10, sigma=14, curvature_threshold=-0.004, ranges_to_check=[(10.5, 12.5), (15.5, 17.5), (21.5, 23.5)]):
+        """
+        Identifies peaks in the PP and PSD_sigma signals within a specified frequency band, refines the peak positions 
+        by checking the non-smoothed data within the given ranges, and selects the peak with the largest curvature.
+
+        Parameters:
+            freqs (numpy.ndarray): Array of frequencies.
+            PP (numpy.ndarray): Signal data from which to identify peaks for PP.
+            PSD_sigma (numpy.ndarray): Signal data from which to identify peaks for PSD_sigma.
+            band (tuple): A tuple specifying the frequency band (min, max) within which to find peaks.
+            distance (int): Minimum distance between peaks (in terms of number of data points).
+            sigma (float): Standard deviation for Gaussian smoothing.
+            curvature_threshold (float): Threshold for the curvature to consider a peak.
+            ranges_to_check (list of tuples): List of frequency ranges to check for peak refinement.
+
+        Returns:
+            numpy.ndarray: List of indices of the refined peaks, selecting the best one from either PP or PSD_sigma.
+        """
+
+        def get_peaks_and_curvatures(signal_data):
+            # Extract indices within the specified frequency band
+            band_min, band_max = band
+            min_idx = np.searchsorted(freqs, band_min)
+            max_idx = np.searchsorted(freqs, band_max)
+            band_freqs = freqs[min_idx:max_idx + 1]
+            band_S = signal_data[min_idx:max_idx + 1]
+            
+            # Smooth the signal and identify peaks in the smoothed signal
+            S_smooth = gaussian_filter1d(band_S, sigma=sigma)
+            smooth_peaks, _ = signal.find_peaks(S_smooth, distance=distance)
+
+            # Compute the curvature of the smoothed signal
+            curvature = np.gradient(np.gradient(S_smooth))
+            
+            # Refine peaks within specified ranges
+            refined_peaks = []
+            curvatures = []
+            for peak in smooth_peaks:
+                # if curvature[peak] < curvature_threshold:
+                # print('  -- ', peak)
+                peak_freq = band_freqs[peak]
+                for r in ranges_to_check:
+                    if r[0] <= peak_freq <= r[1]:
+                        # Extract the original signal within the range
+                        range_min_idx = np.searchsorted(freqs, r[0])
+                        range_max_idx = np.searchsorted(freqs, r[1])
+                        original_section = signal_data[range_min_idx:range_max_idx + 1]
+                        # Find the peak in the original data section
+                        if len(original_section) > 0:
+                            local_peak = np.argmax(original_section)
+                            refined_peak_idx = range_min_idx + local_peak
+                            refined_peaks.append(refined_peak_idx)
+                            curvatures.append(curvature[peak])
+
+            return np.array(refined_peaks), np.array(curvatures)
+
+        # Get refined peaks and curvatures for both PP and PSD_sigma
+        refined_peaks_PP, curvatures_PP = get_peaks_and_curvatures(PP)
+        # print("refined_peaks_PP", refined_peaks_PP, freqs[refined_peaks_PP])
+        refined_peaks_PSD_sigma, curvatures_PSD_sigma = get_peaks_and_curvatures(PSD_sigma)
+        # print("refined_peaks_PSD_sigma", refined_peaks_PSD_sigma, freqs[refined_peaks_PSD_sigma])
+        # Initialize a list to store the best peaks for each range
+        selected_peaks = []
+
+        # For each range, select the peak with the highest curvature from both PP and PSD_sigma
+        for i, r in enumerate(ranges_to_check):
+            # print('r = ', r, ranges_to_check)
+            range_min_freq, range_max_freq = r
+            peaks_in_range_PP = []
+            curvatures_in_range_PP = []
+            peaks_in_range_PSD_sigma = []
+            curvatures_in_range_PSD_sigma = []
+            
+            # Get PP peaks and curvatures within the current range
+            for i, peak in enumerate(refined_peaks_PP):
+                if range_min_freq <= freqs[peak] <= range_max_freq:
+                    peaks_in_range_PP.append(peak)
+                    curvatures_in_range_PP.append(curvatures_PP[i])
+            
+            # Get PSD_sigma peaks and curvatures within the current range
+            for i, peak in enumerate(refined_peaks_PSD_sigma):
+                # print(' -t', range_min_freq, freqs[peak], range_max_freq)
+                if range_min_freq <= freqs[peak] <= range_max_freq:
+                    # print('   oo ', peak)
+                    peaks_in_range_PSD_sigma.append(peak)
+                    curvatures_in_range_PSD_sigma.append(curvatures_PSD_sigma[i])
+            
+            # Combine peaks and curvatures from both signals
+            all_peaks = np.array(peaks_in_range_PP + peaks_in_range_PSD_sigma)
+            all_curvatures = np.array(curvatures_in_range_PP + curvatures_in_range_PSD_sigma)
+
+            # Select the peak with the highest curvature within the current range
+            if len(all_peaks) > 0:
+                best_peak = all_peaks[np.argmax(all_curvatures)]
+                selected_peaks.append(best_peak)
+                # ranges_to_check[i] = (math.floor(freqs[best_peak]), math.ceil(freqs[best_peak]))
+
+        
+
+        return np.unique(np.array(selected_peaks)), ranges_to_check
 
     def extract_indices_within_band(self, freqs, ban_min, band_max):
         """

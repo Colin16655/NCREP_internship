@@ -22,6 +22,14 @@ class Visualizer:
         self.time = time
         self.output_dir = output_dir
 
+    @staticmethod
+    def get_color_array(n):
+        # Get the default color cycle from Matplotlib
+        color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        # Repeat the color cycle if n is greater than the length of the default color cycle
+        colors = [color_cycle[i % len(color_cycle)] for i in range(n)]
+        return colors
+
     def _create_output_dir(self, folder_name):
         """
         Creates a directory for saving figures based on the provided folder name.
@@ -47,7 +55,7 @@ class Visualizer:
         figure.savefig(os.path.join(output_path, f"{file_name}.pdf"), format='pdf', bbox_inches='tight')
         plt.close(figure)
 
-    def plot_data(self, data, filename, folder_name="", y_label="Amplitude", labels=None):
+    def plot_data(self, data, filename, folder_name="", y_label="Amplitude", labels=None, show=False):
         """
         Plots the time series data and saves the figure.
 
@@ -56,7 +64,7 @@ class Visualizer:
             filename (str): Filename of the plot.
             folder_name (str): Name of the folder where the figure will be saved. Defaults to "".
         """
-        fig, ax = plt.subplots(len(data[0]), 1, sharex=True, figsize=(10, 20))
+        fig, ax = plt.subplots(len(data[0]), 1, sharex=True, figsize=(3.33, 10))
         for i in range(len(data[0])):
             if labels is not None : 
                 ax[i].plot(self.time, data[:, i], label=labels[i])
@@ -69,8 +77,9 @@ class Visualizer:
         fig.tight_layout()
 
         self._save_figure(fig, filename, folder_name)
+        if show: fig.show()
 
-    def plot_fft(self, frequencies, fft_data, folder_name="", labels=None):
+    def plot_fft(self, frequencies, fft_data, folder_name="", labels=None, show=False):
         """
         Plots the FFT results and saves the figure.
 
@@ -98,11 +107,27 @@ class Visualizer:
         ax[-1, 0].set_xlabel("Frequency [Hz]")
         ax[-1, 1].set_xlabel("Frequency [Hz]")
         ax[-1, 2].set_xlabel("Frequency [Hz]")
-        plt.tight_layout()
+        fig.tight_layout()
+
+        self._save_figure(fig, "FFT_complete_results", folder_name)
+
+        fft_data_stair = fft_data[:, 3:7]
+
+        fig, ax = plt.subplots(4, 1, figsize=(3.33, 10))
+        for i in range(4):
+            if labels is not None:
+                ax[i].plot(frequencies, np.abs(fft_data_stair[:, i]), label=labels[3:7][i])
+                ax[i].legend()
+            else : ax[i].plot(frequencies, np.abs(fft_data_stair[:, i]))
+            ax[i].set_ylabel("FFT - Amplitude")
+            ax[i].set_xlim(8, 24)
+        ax[-1].set_xlabel("Frequency [Hz]")
+        fig.tight_layout()
 
         self._save_figure(fig, "FFT_results", folder_name)
+        if show: fig.show()
 
-    def plot_psd(self, frequencies, psd_matrix, folder_name="", labels=None):
+    def plot_psd(self, frequencies, psd_matrix, folder_name="", labels=None, show=False):
         """
         Plots the Power Spectral Density (PSD) and saves the figure.
 
@@ -110,16 +135,16 @@ class Visualizer:
             psd_matrix (numpy.ndarray): PSD matrix data.
             folder_name (str): Name of the folder where the figure will be saved. Defaults to "".
         """
-        fig, ax = plt.subplots(2, 1, figsize=(10, 10))
+        fig, ax = plt.subplots(2, 1, figsize=(5, 5))
         for i in range(len(psd_matrix[0])):
             if labels is not None:
                 ax[0].semilogy(frequencies, np.real(psd_matrix[:, i, i]), label=labels[i])
-                ax[0].legend()
+                ax[0].legend(framealpha=0.5)
             else:
                 ax[0].semilogy(frequencies, np.real(psd_matrix[:, i, i]))
             if labels is not None:
                 ax[1].plot(frequencies, np.real(psd_matrix[:, i, i]), label=labels[i])
-                ax[1].legend()
+                ax[1].legend(framealpha=0.5)
             else:
                 ax[1].plot(frequencies, np.real(psd_matrix[:, i, i]))
         ax[1].set_xlabel("Frequency [Hz]")
@@ -129,105 +154,201 @@ class Visualizer:
         ax[1].set_xlim(8, 24)
         fig.tight_layout()
         self._save_figure(fig, "PSD_results", folder_name)
+        if show: fig.show()
 
-    def plot_sigmas(self, frequencies, S_PSD, S_corr, folder_name=""):
+    def plot_sigmas_old(self, frequencies, S_PSD, S_corr, folder_name="", sigma=14, show=False):
         """
         Plots the singular values of the PSD matrix as a function of frequency and saves the figure.
 
         Parameters:
-            singular_values (numpy.ndarray): The singular values array from SVD.
             frequencies (numpy.ndarray): The frequency array.
-            filename (str): Filename of the plot.
+            S_PSD (numpy.ndarray): The singular values array from the PSD matrix.
+            S_corr (numpy.ndarray): The singular values array from the coherence matrix.
             folder_name (str): Name of the folder where the figure will be saved. Defaults to "".
+            sigma (float): Standard deviation for Gaussian kernel. Defaults to 14.
         """
         num_singular_values = S_PSD.shape[1]  # Number of singular values
-        fig, ax = plt.subplots(2, 2, figsize=(20, 10))
+
+        # Define frequency range for x-limits
+        freq_min, freq_max = 8, 24
+
+        fig, ax = plt.subplots(2, 2, figsize=(10, 10))  # Adjusted figsize to accommodate additional plots
+
+        colors = self.get_color_array(num_singular_values)
+
         for k, singular_values in enumerate([S_PSD, S_corr]):
+            min_val = np.inf
+            max_val = -np.inf
+
+            # Filter data within the specified frequency range
+            freq_mask = (frequencies >= freq_min) & (frequencies <= freq_max)
+            freq_filtered = frequencies[freq_mask]
+
             for i in range(num_singular_values):
-                ax[0, k].semilogy(frequencies, singular_values[:, i], label=f'sigma {i+1}')
-                ax[1, k].plot(frequencies, singular_values[:, i], label=f'sigma {i+1}')
-            
+                original_values = singular_values[:, i]
+                filtered_values = gaussian_filter1d(original_values, sigma=sigma)
+
+                # Apply frequency mask to the original and filtered values
+                original_values_filtered = original_values[freq_mask]
+                filtered_values_filtered = filtered_values[freq_mask]
+
+                # Update min and max values within the frequency range
+                min_val = min(min_val, np.min(original_values_filtered), np.min(filtered_values_filtered))
+                max_val = max(max_val, np.max(original_values_filtered), np.max(filtered_values_filtered))
+
+                # Plot non-smoothed curves
+                ax[0, k].semilogy(freq_filtered, original_values_filtered, label=f'$sigma_{i+1}$ (Raw)', linestyle='solid', color=colors[i])
+                ax[1, k].plot(freq_filtered, original_values_filtered, label=f'$sigma_{i+1}$ (Raw)', linestyle='solid', color=colors[i])
+
+                # Plot smoothed curves
+                ax[0, k].semilogy(freq_filtered, filtered_values_filtered, linestyle='dotted', color=colors[i])
+                ax[1, k].plot(freq_filtered, filtered_values_filtered, linestyle='dotted', color=colors[i])
+
+            # Set y-limits based on min and max values within the frequency range
+            ax[0, k].set_ylim(min_val, max_val)
+            ax[1, k].set_ylim(min_val, max_val)
+
             ax[1, k].set_xlabel("Frequency [Hz]")
             ax[0, k].set_ylabel("Singular Value")
             ax[1, k].set_ylabel("Singular Value")
-            ax[0, k].set_xlim(8, 24)
-            ax[1, k].set_xlim(8, 24)
-            ax[0, k].legend()
-            ax[1, k].legend()
-        fig.suptitle("Left : PSD, Right : Correlation", fontsize=20)
+            ax[0, k].set_xlim(freq_min, freq_max)
+            ax[1, k].set_xlim(freq_min, freq_max)
+            ax[0, k].legend(framealpha=0.5)
+            ax[1, k].legend(framealpha=0.5)
+
+        ax[0, 0].set_title("PSD", fontsize=20)
+        ax[0, 1].set_title("Coherence", fontsize=20)
         fig.tight_layout()
         self._save_figure(fig, "SVD_results", folder_name)
+        if show: fig.show()
 
-    def plot_pp_indexc(self, freqs, P1, P2, P3, peaks, folder_name=""):
+    def plot_sigmas(self, frequencies, S_PSD, peaks, folder_name="", sigma=14, plot_li=False, show=False):
         """
-        Plots the PP indices as a function of frequency and saves the figure.
+        Plots the singular values of the PSD matrix as a function of frequency and saves the figure.
 
         Parameters:
-            freqs (numpy.ndarray): The frequency array.
-            P1 (numpy.ndarray): The first PP index.
-            P2 (numpy.ndarray): The second PP index.
-            P3 (numpy.ndarray): The third PP index.
-            folder_name (str): Name of the folder where the figure will be saved. Defaults to "".
-        """
-        fig, ax = plt.subplots(figsize=(5, 5))
-        ax.semilogy(freqs, P1, label="P1")
-        ax.semilogy(freqs, P2, label="P2")
-        ax.semilogy(freqs, P3, label="P3")
-
-        # Scatter plot for P3 at the peak points
-        ax.scatter(freqs[peaks], P3[peaks], color='red', marker='x', label='Peaks')
-
-        ax.set_ylabel("PP index")
-        ax.set_xlabel("Frequency [Hz]")
-        ax.legend()
-        ax.set_xlim(8, 24)
-
-        fig.tight_layout()
-        self._save_figure(fig, "PP_indices_results", folder_name)
-
-    def plot_pp_index(self, freqs, P1, P2, P3, peaks, folder_name="", sigma=14):
-        """
-        Plots the PP indices as a function of frequency and saves the figure.
-
-        Parameters:
-            freqs (numpy.ndarray): The frequency array.
-            P1 (numpy.ndarray): The first PP index.
-            P2 (numpy.ndarray): The second PP index.
-            P3 (numpy.ndarray): The third PP index.
+            frequencies (numpy.ndarray): The frequency array.
+            S_PSD (numpy.ndarray): The singular values array from the PSD matrix.
             peaks (numpy.ndarray): Indices of the peak points.
             folder_name (str): Name of the folder where the figure will be saved. Defaults to "".
-            sigma (float): Standard deviation for Gaussian kernel. Defaults to 2.
+            sigma (float): Standard deviation for Gaussian kernel. Defaults to 14.
+            plot_li (bool): Whether to plot the additional linear plots. Defaults to False.
+            show (bool): Whether to display the plot. Defaults to False.
         """
+        num_singular_values = S_PSD.shape[1]  # Number of singular values
+
+        # Define frequency range for x-limits
+        freq_min, freq_max = 8, 24
+
+        if plot_li:
+            fig, ax = plt.subplots(2, 1, figsize=(10, 10))  # Adjusted figsize to accommodate additional plots
+            ax0 = ax[0]
+        else:
+            fig, ax0 = plt.subplots(1, 1, figsize=(7, 4))
+
+        colors = self.get_color_array(num_singular_values)
+
+        min_val = np.inf
+        max_val = -np.inf
+
+        # Filter data within the specified frequency range
+        freq_mask = (frequencies >= freq_min) & (frequencies <= freq_max)
+        freq_filtered = frequencies[freq_mask]
+
+        for i in range(num_singular_values):
+            original_values = S_PSD[:, i]
+            filtered_values = gaussian_filter1d(original_values, sigma=sigma)
+
+            # Apply frequency mask to the original and filtered values
+            original_values_filtered = original_values[freq_mask]
+            filtered_values_filtered = filtered_values[freq_mask]
+
+            # Update min and max values within the frequency range
+            min_val = min(min_val, np.min(original_values_filtered), np.min(filtered_values_filtered))
+            max_val = max(max_val, np.max(original_values_filtered), np.max(filtered_values_filtered))
+
+            # Plot non-smoothed curves
+            ax0.semilogy(freq_filtered, original_values_filtered, label=f'$\sigma_{i+1}$ (Raw)', linestyle='dotted', color=colors[i])
+            # Plot smoothed curves
+            ax0.semilogy(freq_filtered, filtered_values_filtered, linestyle='solid', color=colors[i])
+
+            if plot_li:
+                ax[1].plot(freq_filtered, original_values_filtered, label=f'$\sigma_{i+1}$ (Raw)', linestyle='dotted', color=colors[i])
+                ax[1].plot(freq_filtered, filtered_values_filtered, linestyle='solid', color=colors[i])
+
+        # Scatter plot for first sigma at the peak points
+        peak_values = S_PSD[peaks, 0]
+        ax0.scatter(frequencies[peaks], peak_values, color='black', marker='x', label='Peaks')
+
+        # Update min and max values to include peak values and slightly increase max_val to avoid cropping
+        min_val = min(min_val, np.min(peak_values))
+        max_val = max(max_val, np.max(peak_values))
+
+        # Increase max_val slightly to avoid cropping the peaks
+        y_margin = (max_val - min_val) * 0.2  # 20% margin
+        max_val += y_margin
+
+        # Set y-limits based on min and max values within the frequency range
+        ax0.set_ylim(min_val, max_val)
+        ax0.set_ylabel("Singular Value")
+        ax0.set_xlim(freq_min, freq_max)
+        if plot_li:
+            ax[1].set_ylim(min_val, max_val)
+            ax[1].set_xlabel("Frequency [Hz]")
+            ax[1].set_ylabel("Singular Value")
+            ax[1].set_xlim(freq_min, freq_max)
+            ax[1].legend(framealpha=0.5)
+        else:
+            ax0.set_xlabel("Frequency [Hz]")
+
+        ax0.legend(framealpha=0.5)
+        fig.tight_layout()
+        self._save_figure(fig, "PSD_SVD_results", folder_name)
+        if show: fig.show()
+
+    def plot_pp_index(self, freqs, PPS, peaks, folder_name="", sigma=14, show=False):
+        """
+        Plots the PP indices as a function of frequency and saves the figure.
+
+        Parameters:
+            freqs (numpy.ndarray): The frequency array.
+            PPS (list of numpy.ndarray): List of PP indices.
+            peaks (numpy.ndarray): Indices of the peak points.
+            folder_name (str): Name of the folder where the figure will be saved. Defaults to "".
+            sigma (float): Standard deviation for Gaussian kernel. Defaults to 14.
+            show (bool): Whether to display the plot. Defaults to False.
+        """
+        num_singular_values = len(PPS)  # Number of PP indices
+        colors = self.get_color_array(num_singular_values)  # Get colors for each PP index
+
         # Apply Gaussian smoothing
-        P1_smooth = gaussian_filter1d(P1, sigma=sigma)
-        P2_smooth = gaussian_filter1d(P2, sigma=sigma)
-        P3_smooth = gaussian_filter1d(P3, sigma=sigma)
+        PPS_smooth = [gaussian_filter1d(P, sigma=sigma) for P in PPS]
 
-        fig, ax = plt.subplots(figsize=(10, 6))
+        fig, ax = plt.subplots(figsize=(7, 4))
 
-        # Plot non-smoothed curves
-        ax.semilogy(freqs, P1, label="P1 (Raw)", linestyle='dotted', color='orange')
-        ax.semilogy(freqs, P2, label="P2 (Raw)", linestyle='dotted', color='green')
-        ax.semilogy(freqs, P3, label="P3 (Raw)", linestyle='dotted', color='blue')
+        # Plot non-smoothed and smoothed curves
+        for i, P in enumerate(PPS):
+            label_raw = f"P{i+1} (Raw)"
+            label_smooth = f"P{i+1} (Smoothed)"
+            color = colors[i % len(colors)]
+            ax.semilogy(freqs, P, label=label_raw, linestyle='dotted', color=color)
+            ax.semilogy(freqs, PPS_smooth[i], label=label_smooth, linestyle='solid', color=color)
 
-        # Plot smoothed curves
-        ax.semilogy(freqs, P1_smooth, label="P1 (Smoothed)", linestyle='solid', color='orange')
-        ax.semilogy(freqs, P2_smooth, label="P2 (Smoothed)", linestyle='solid', color='green')
-        ax.semilogy(freqs, P3_smooth, label="P3 (Smoothed)", linestyle='solid', color='blue')
-
-        # Scatter plot for P3 at the peak points
-        ax.scatter(freqs[peaks], P3[peaks], color='red', marker='x', label='Peaks')
+        # Scatter plot for the peaks (using the first PP index for peaks visualization)
+        if len(PPS) > 0:
+            ax.scatter(freqs[peaks], PPS[-1][peaks], color='black', marker='x', label='Peaks')
 
         ax.set_ylabel("PP index")
         ax.set_xlabel("Frequency [Hz]")
-        ax.legend()
+        ax.legend(framealpha=0.5)
         ax.set_xlim(8, 24)
         ax.grid(True)
 
         fig.tight_layout()
         self._save_figure(fig, "PP_indices_results", folder_name)
+        if show: fig.show()
 
-    def plot_PCA(self, data, folder_name=""):
+    def plot_PCA(self, data, folder_name="", show=False):
         # Apply PCA
         pca = PCA(n_components=3)  # For 3D visualization
         principal_components_3d = pca.fit_transform(data)
@@ -256,8 +377,9 @@ class Visualizer:
 
         fig.tight_layout()
         self._save_figure(fig, "PCA", folder_name)
+        if show: fig.show()
 
-    def plot_MAC_matrix(self, MAC, mode_frequency, peaks, folder_name=""):
+    def plot_MAC_matrix(self, MAC, mode_frequency, peaks, folder_name="", show=False):
         # Create the plot
         fig, ax = plt.subplots(figsize=(8, 8))
         cax = ax.imshow(MAC, cmap='viridis')
@@ -283,3 +405,4 @@ class Visualizer:
         # Show plot
         fig.tight_layout()
         self._save_figure(fig, "MAC_matrix", folder_name)
+        if show: fig.show()
