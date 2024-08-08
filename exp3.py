@@ -1,12 +1,11 @@
 import numpy as np
 from helper.data_loader import DataLoader
-from helper.signal_transformer import SignalTransformer
-from helper.frequency_analyzer import FrequencyAnalyzer
+from helper.preprocessor import Preprocessor
+from helper.processor import FrequencyAnalyzer
 from helper.visualizer import Visualizer
 from scipy.ndimage import gaussian_filter1d
 import os
-from helper.process import get_vibration_frequencies, get_vibration_frequencies_pyoma
-import PyOMA as oma
+from helper.process import get_vibration_frequencies, get_vibration_frequencies_pyoma, get_vibration_frequencies_best
 
 # Set rcParams to customize plot appearance
 import matplotlib.pyplot as plt
@@ -36,15 +35,11 @@ def get_files_list(folder_path):
     """
     # List all files in the folder
     files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
-    
     # Sort files by filename (assumes filenames can be sorted lexicographically)
     files.sort()
-
     # Create full file paths
     sorted_file_paths = [os.path.join(folder_path, file_name) for file_name in files]
-
     return sorted_file_paths
-
 
 def plot_frequencies(file_paths, location, time_window_factor, show=False):
     """
@@ -56,9 +51,9 @@ def plot_frequencies(file_paths, location, time_window_factor, show=False):
     """
 
     # Initialize lists to collect frequencies
-    freqs_8_13 = np.full((3, int(len(file_paths)/time_window_factor)), np.nan)
-    freqs_13_18 = np.full((3,int(len(file_paths)/time_window_factor)), np.nan)
-    freqs_18_24 = np.full((3,int(len(file_paths)/time_window_factor)), np.nan)
+    freqs_8_13 = np.full((4, int(len(file_paths)/time_window_factor)), np.nan)
+    freqs_13_18 = np.full((4,int(len(file_paths)/time_window_factor)), np.nan)
+    freqs_18_24 = np.full((4,int(len(file_paths)/time_window_factor)), np.nan)
     idx = 0
     for i in range(0, len(file_paths)+1-time_window_factor, time_window_factor):
         file_path = [file_paths[j] for j in range(i, i+time_window_factor)]
@@ -84,7 +79,7 @@ def plot_frequencies(file_paths, location, time_window_factor, show=False):
 
     # Create the plots
     visualizer = Visualizer(time, output_dir="results")
-    location = "Lello_Jul24_stairs"
+    location = "Lello_Jul23_stairs"
     processing_method = "Welch"
     nperseg = 2048 # 256, 512, 1024, 2048, 4096, 8192
     folder_name = f"loc_{location}_wd{600*time_window_factor}_meth_{processing_method}_nperseg_{nperseg}"

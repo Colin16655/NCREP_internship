@@ -1,7 +1,7 @@
 import numpy as np
 from helper.data_loader import DataLoader
-from helper.signal_transformer import SignalTransformer
-from helper.frequency_analyzer import FrequencyAnalyzer
+from helper.preprocessor import Preprocessor
+from helper.processor import FrequencyAnalyzer
 from helper.visualizer import Visualizer
 from scipy.ndimage import gaussian_filter1d
 
@@ -40,8 +40,8 @@ file_paths_24 = [
 ]
 
 ### USER ###
-file_paths = file_paths_24[2:]
-location = "Lello_Jul24_stairs"
+file_paths = file_paths_23[0:4]
+location = "Lello_Jul23_stairs"
 selected_indices = [3, 4, 5, 6]  # Indices of the selected sensors : stair
 
 ### USER ###
@@ -56,7 +56,7 @@ print("Data shape:", data.shape)
 scaling_factors = np.array([0.4035*1000, 0.4023*1000, 0.4023*1000, 0.4023*1000, 0.4015*1000, 0.4014*1000, 0.4007*1000, 0.4016*1000])
 
 # Transform the data
-transformer = SignalTransformer(time, data, scaling_factors)
+transformer = Preprocessor(time, data, scaling_factors)
 detrended_data = transformer.detrend_and_scale()
 
 # Initialize the Visualizer with time and frequencies

@@ -75,17 +75,26 @@ class Visualizer:
         ax[-1].set_xlabel("Time [s]")
         # fig.suptitle(filename)
         fig.tight_layout()
-
         self._save_figure(fig, filename, folder_name)
         if show: fig.show()
 
     def plot_fft(self, frequencies, fft_data, folder_name="", labels=None, show=False):
         """
-        Plots the FFT results and saves the figure.
+        Plots the FFT results and saves the figures.
+
+        This function generates two sets of plots:
+        1. A grid of subplots showing the real part, imaginary part, and amplitude of the FFT data for each channel.
+        2. A set of subplots showing the amplitude of the FFT data for a specific subset of channels (channels 3 to 6).
 
         Parameters:
-            fft_data (numpy.ndarray): FFT data to plot.
-            folder_name (str): Name of the folder where the figure will be saved. Defaults to "".
+            frequencies (numpy.ndarray): The frequency values corresponding to the FFT data.
+            fft_data (numpy.ndarray): The FFT data to plot, with dimensions (num_frequencies, num_channels).
+            folder_name (str): Name of the folder where the figures will be saved. Defaults to "" (current directory).
+            labels (list of str or None): Optional list of labels for the channels. If provided, it should be the same length as the number of channels in `fft_data`.
+            show (bool): If True, the figures will be displayed interactively. Defaults to False.
+
+        Returns:
+            None
         """
         fig, ax = plt.subplots(8, 3, figsize=(15, 20))
         for i in range(8):
@@ -129,11 +138,21 @@ class Visualizer:
 
     def plot_psd(self, frequencies, psd_matrix, folder_name="", labels=None, show=False):
         """
-        Plots the Power Spectral Density (PSD) and saves the figure.
+        Plots the Power Spectral Density (PSD) and saves the figures.
+
+        This function generates two plots:
+        1. A semi-logarithmic plot showing the real part of the PSD data over frequency.
+        2. A linear plot showing the real part of the PSD data over frequency.
 
         Parameters:
-            psd_matrix (numpy.ndarray): PSD matrix data.
-            folder_name (str): Name of the folder where the figure will be saved. Defaults to "".
+            frequencies (numpy.ndarray): Array of frequency values corresponding to the PSD data.
+            psd_matrix (numpy.ndarray): 3D array containing the PSD data, with dimensions (num_frequencies, num_channels, num_channels).
+            folder_name (str): Name of the folder where the figures will be saved. Defaults to "" (current directory).
+            labels (list of str or None): Optional list of labels for the channels. If provided, it should match the number of channels in `psd_matrix`.
+            show (bool): If True, the figures will be displayed interactively. Defaults to False.
+
+        Returns:
+            None
         """
         fig, ax = plt.subplots(2, 1, figsize=(5, 5))
         for i in range(len(psd_matrix[0])):
@@ -244,7 +263,7 @@ class Visualizer:
             fig, ax = plt.subplots(2, 1, figsize=(10, 10))  # Adjusted figsize to accommodate additional plots
             ax0 = ax[0]
         else:
-            fig, ax0 = plt.subplots(1, 1, figsize=(7, 4))
+            fig, ax0 = plt.subplots(1, 1, figsize=(5.5, 3))
 
         colors = self.get_color_array(num_singular_values)
 
@@ -380,6 +399,8 @@ class Visualizer:
         if show: fig.show()
 
     def plot_MAC_matrix(self, MAC, mode_frequency, peaks, folder_name="", show=False):
+        print("r", MAC)
+        print("r", mode_frequency)
         # Create the plot
         fig, ax = plt.subplots(figsize=(8, 8))
         cax = ax.imshow(MAC, cmap='viridis')
@@ -395,7 +416,7 @@ class Visualizer:
         ax.set_yticklabels([f"{freq:.2f} Hz" for freq in mode_frequency])
 
         # Rotate the tick labels for better readability if needed
-        plt.xticks(rotation=45)
+        # plt.set_xticks(rotation=45)
 
         # Add titles and labels
         ax.set_title("MAC Matrix")
@@ -404,5 +425,6 @@ class Visualizer:
 
         # Show plot
         fig.tight_layout()
+        print(folder_name)
+        if show: plt.show()
         self._save_figure(fig, "MAC_matrix", folder_name)
-        if show: fig.show()

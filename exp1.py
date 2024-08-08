@@ -1,11 +1,10 @@
+# Process with a single time window
+
 import numpy as np
 from helper.data_loader import DataLoader
-from helper.signal_transformer import SignalTransformer
-from helper.frequency_analyzer import FrequencyAnalyzer
+from helper.preprocessor import Preprocessor
+from helper.processor import ModalFrequencyAnalyzer, PeakPicker
 from helper.visualizer import Visualizer
-from scipy.ndimage import gaussian_filter1d
-import PyOMA as oma
-
 
 # Set rcParams to customize plot appearance
 import matplotlib.pyplot as plt
@@ -41,11 +40,10 @@ file_paths_24 = [
 ]
 
 ### USER ###
-file_paths = file_paths_24[2:]
+file_paths = file_paths_24[:4]
 location = "Lello_Jul24_stairs"
 nperseg = 2048 # 256, 512, 1024, 2048, 4096, 8192
 selected_indices = [3, 4, 5, 6]  # Indices of the selected sensors : stair
-
 ### USER ###
 
 # Load the data
@@ -58,8 +56,8 @@ print("Data shape:", data.shape)
 scaling_factors = np.array([0.4035*1000, 0.4023*1000, 0.4023*1000, 0.4023*1000, 0.4015*1000, 0.4014*1000, 0.4007*1000, 0.4016*1000])
 
 # Transform the data
-transformer = SignalTransformer(time, data, scaling_factors)
-detrended_data = transformer.detrend_and_scale()
+preprocessor = Preprocessor(time, data, scaling_factors)
+detrended_data = preprocessor.detrend_and_scale()
 
 # Initialize the Visualizer with time and frequencies
 # Create a unique folder name based on hyperparameters
@@ -69,43 +67,38 @@ folder_name = f"loc_{location}_wind_{time_window_size}_meth_{processing_method}_
 
 visualizer = Visualizer(time, output_dir="results")
 labels=["Base X", "Base Y", "Base Z", "Stair 1 X", "Stair 1 Y", "Stair 1 Z", "Stair 2 Z", "Vitral Z"]
-visualizer.plot_data(data[:,3:7], "Original_sensor_data", folder_name, y_label="[A]", labels=labels[3:7])
-visualizer.plot_data(detrended_data[:,3:7], "Detrended_scaled_sensor_data", folder_name, y_label="[mG]", labels=labels[3:7])
+selected_labels = [labels[i] for i in selected_indices]
+
+visualizer.plot_data(np.array([data[:, i] for i in selected_indices]).T, "Original_sensor_data", folder_name, y_label="[A]", labels=selected_labels)
+
+visualizer.plot_data(np.array([detrended_data[:, i] for i in selected_indices]).T, "Detrended_scaled_sensor_data", folder_name, y_label="[mG]", labels=selected_labels)
 
 # Analyze the frequency components
-analyzer = FrequencyAnalyzer(detrended_data, time)
+analyzer = ModalFrequencyAnalyzer(detrended_data, time)
+
 frequencies, fft_data = analyzer.compute_fft()
 visualizer.plot_fft(frequencies, fft_data, folder_name, labels=labels)
 
-# Compute PSD using Welch's method
-fs = 1 / np.mean(np.diff(time))
-# print("Sampling frequency:", fs)
-freqs, psd_matrix = analyzer.compute_psd_matrix(fs, selected_indices, nperseg=nperseg)
-# Visualize the PSDs
-visualizer.plot_psd(freqs, psd_matrix, folder_name, labels=labels[3:7])
+freqs, psd_matrix = analyzer.compute_psd_matrix(selected_indices, nperseg=nperseg)
+U_PSD, S_PSD, V_PSD = analyzer.perform_svd_psd()
+visualizer.plot_psd(freqs, psd_matrix, folder_name, labels=selected_labels)
 
-# Compute the correlation matrix
-correlation_matrix = analyzer.compute_correlation_matrix(psd_matrix)
+coherence_matrix = analyzer.compute_coherence_matrix()
+U_corr, S_corr, V_corr = analyzer.perform_svd_coherence()
+P1, P2, P3 = analyzer.get_pp_index()
 
-# Perform SVD of the PSD matrix and correlation matrix
-U_PSD, S_PSD, V_PSD = analyzer.perform_svd(psd_matrix)
-U_corr, S_corr, V_corr = analyzer.perform_svd(correlation_matrix)
-
-# Get the PP index
-P1, P2, P3 = analyzer.get_pp_index(correlation_matrix, S_corr)
-
-# Identify and print the mode frequency
-peaks = analyzer.identify_peaks(freqs, P3, distance=1)
+# Peak picking
+peak_picker = PeakPicker(analyzer)
+peaks = peak_picker.identify_peaks_0(P3, distance=1)
 range_to_check = [(11,12), (16,17), (22,23)]
-peaks, range_to_check = analyzer.identify_peaks_bis(freqs, P3, S_PSD[:, 0])
-
+# peaks, range_to_check = analyzer.identify_peaks_bis(freqs, P3, S_PSD[:, 0])
+# peaks, _ = analyzer.identify_peaks_bis_bis(freqs, S_PSD[:, 0], U_PSD)
 
 # Visualize the singular values
 visualizer.plot_sigmas(freqs, S_PSD, peaks, folder_name)
-
 visualizer.plot_pp_index(freqs, [P1, P2, P3], peaks, folder_name)
 
-mode_frequency, mode_shape = analyzer.identify_mode_shapes(freqs, U_PSD, peaks)
+mode_frequency, mode_shape = peak_picker.identify_mode_shapes(U_PSD, peaks)
 print(f"Identified mode frequencies: {mode_frequency} Hz")
 
 # Visualize the PCA of the mode shapes
@@ -115,5 +108,5 @@ print(f"Identified mode frequencies: {mode_frequency} Hz")
 MAC = np.zeros((len(peaks), len(peaks)))
 for i in range(len(peaks)):
     for j in range(len(peaks)):
-        MAC[i, j] = analyzer.compute_mac(mode_shape[i], mode_shape[j])
+        MAC[i, j] = peak_picker.compute_mac(mode_shape[i], mode_shape[j])
 visualizer.plot_MAC_matrix(MAC, mode_frequency, peaks, folder_name)
