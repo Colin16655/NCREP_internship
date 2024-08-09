@@ -21,7 +21,7 @@ class FrequencyAnalyzer:
         V (numpy.ndarray): Right singular vectors from SVD (V = U.T since the psd_matrix is symetric).
     """
 
-    def __init__(self, detrended_data, time):
+    def __init__(self, detrended_data,=None time=None):
         """
         Initializes the FrequencyAnalyzer with detrended data and time vector.
 

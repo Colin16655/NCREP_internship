@@ -42,7 +42,7 @@ class Visualizer:
             os.makedirs(path)
         return path
 
-    def _save_figure(self, figure, file_name, folder_name):
+    def _save_figure(self, figure, file_name, folder_name, format='pdf'):
         """
         Saves the figure in PDF formats.
 
@@ -52,7 +52,8 @@ class Visualizer:
             folder_name (str): The folder where the files will be saved.
         """
         output_path = self._create_output_dir(folder_name)
-        figure.savefig(os.path.join(output_path, f"{file_name}.pdf"), format='pdf', bbox_inches='tight')
+        if format == 'png' : figure.savefig(os.path.join(output_path, f"{file_name}.png"), bbox_inches='tight')
+        else : figure.savefig(os.path.join(output_path, f"{file_name}.pdf"), format='pdf', bbox_inches='tight')
         plt.close(figure)
 
     def plot_data(self, data, filename, folder_name="", y_label="Amplitude", labels=None, show=False):
@@ -96,8 +97,9 @@ class Visualizer:
         Returns:
             None
         """
-        fig, ax = plt.subplots(8, 3, figsize=(15, 20))
-        for i in range(8):
+        n_sensors = len(fft_data[0])
+        fig, ax = plt.subplots(n_sensors, 3, figsize=(15, 20/8*n_sensors))
+        for i in range(n_sensors):
             if labels is not None:
                 ax[i, 0].plot(frequencies, np.real(fft_data[:, i]), label=labels[i])
                 ax[i, 0].legend()
@@ -120,14 +122,12 @@ class Visualizer:
 
         self._save_figure(fig, "FFT_complete_results", folder_name)
 
-        fft_data_stair = fft_data[:, 3:7]
-
-        fig, ax = plt.subplots(4, 1, figsize=(3.33, 10))
-        for i in range(4):
+        fig, ax = plt.subplots(n_sensors, 1, figsize=(3.33, 2.5*n_sensors))
+        for i in range(n_sensors):
             if labels is not None:
-                ax[i].plot(frequencies, np.abs(fft_data_stair[:, i]), label=labels[3:7][i])
+                ax[i].plot(frequencies, np.abs(fft_data[:, i]), label=labels[i])
                 ax[i].legend()
-            else : ax[i].plot(frequencies, np.abs(fft_data_stair[:, i]))
+            else : ax[i].plot(frequencies, np.abs(fft_data[:, i]))
             ax[i].set_ylabel("FFT - Amplitude")
             ax[i].set_xlim(8, 24)
         ax[-1].set_xlabel("Frequency [Hz]")
@@ -241,7 +241,7 @@ class Visualizer:
         self._save_figure(fig, "SVD_results", folder_name)
         if show: fig.show()
 
-    def plot_sigmas(self, frequencies, S_PSD, peaks, folder_name="", sigma=14, plot_li=False, show=False):
+    def plot_sigmas(self, frequencies, S_PSD, peaks, folder_name="", sigma=14, filename='PSD_SVD_results', plot_li=False, show=False):
         """
         Plots the singular values of the PSD matrix as a function of frequency and saves the figure.
 
@@ -322,10 +322,10 @@ class Visualizer:
 
         ax0.legend(framealpha=0.5)
         fig.tight_layout()
-        self._save_figure(fig, "PSD_SVD_results", folder_name)
+        self._save_figure(fig, filename, folder_name)
         if show: fig.show()
 
-    def plot_pp_index(self, freqs, PPS, peaks, folder_name="", sigma=14, show=False):
+    def plot_pp_index(self, freqs, PPS, peaks, folder_name="", filename='PP_indices_results', sigma=14, show=False):
         """
         Plots the PP indices as a function of frequency and saves the figure.
 
@@ -364,7 +364,7 @@ class Visualizer:
         ax.grid(True)
 
         fig.tight_layout()
-        self._save_figure(fig, "PP_indices_results", folder_name)
+        self._save_figure(fig, filename, folder_name)
         if show: fig.show()
 
     def plot_PCA(self, data, folder_name="", show=False):
@@ -398,9 +398,7 @@ class Visualizer:
         self._save_figure(fig, "PCA", folder_name)
         if show: fig.show()
 
-    def plot_MAC_matrix(self, MAC, mode_frequency, peaks, folder_name="", show=False):
-        print("r", MAC)
-        print("r", mode_frequency)
+    def plot_MAC_matrix(self, MAC, mode_frequency, peaks, folder_name="", filename='MAC_matrix', show=False):
         # Create the plot
         fig, ax = plt.subplots(figsize=(8, 8))
         cax = ax.imshow(MAC, cmap='viridis')
@@ -416,7 +414,7 @@ class Visualizer:
         ax.set_yticklabels([f"{freq:.2f} Hz" for freq in mode_frequency])
 
         # Rotate the tick labels for better readability if needed
-        # plt.set_xticks(rotation=45)
+        plt.xticks(rotation=45)
 
         # Add titles and labels
         ax.set_title("MAC Matrix")
@@ -425,6 +423,5 @@ class Visualizer:
 
         # Show plot
         fig.tight_layout()
-        print(folder_name)
         if show: plt.show()
-        self._save_figure(fig, "MAC_matrix", folder_name)
+        self._save_figure(fig, filename, folder_name, format='png')

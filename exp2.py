@@ -1,7 +1,6 @@
 import numpy as np
 from helper.data_loader import DataLoader
-from helper.preprocessor import Preprocessor
-from helper.processor import FrequencyAnalyzer
+from helper.processor import ModalFrequencyAnalyzer, PeakPicker
 from helper.visualizer import Visualizer
 from scipy.ndimage import gaussian_filter1d
 
@@ -43,21 +42,20 @@ file_paths_24 = [
 file_paths = file_paths_23[0:4]
 location = "Lello_Jul23_stairs"
 selected_indices = [3, 4, 5, 6]  # Indices of the selected sensors : stair
-
+distance0 = 1 # for pp method 0
+distance1 = 10 # for peak picking method 
+sigma = 14 # for pp method
+ranges_to_check = [(10.5, 12.5), (15.5, 17.5), (21.5, 23.5)] # for pp method
 ### USER ###
 
+# Define scaling factors for the sensor data
+scaling_factors = np.array([0.4035*1000, 0.4023*1000, 0.4023*1000, 0.4023*1000, 0.4015*1000, 0.4014*1000, 0.4007*1000, 0.4016*1000])[selected_indices]
+
 # Load the data
-loader = DataLoader(file_paths)
+loader = DataLoader(selected_indices, file_paths=file_paths)
 time, data = loader.load_data()
 print("Time shape:", time.shape)
 print("Data shape:", data.shape)
-
-# Define scaling factors for the sensor data
-scaling_factors = np.array([0.4035*1000, 0.4023*1000, 0.4023*1000, 0.4023*1000, 0.4015*1000, 0.4014*1000, 0.4007*1000, 0.4016*1000])
-
-# Transform the data
-transformer = Preprocessor(time, data, scaling_factors)
-detrended_data = transformer.detrend_and_scale()
 
 # Initialize the Visualizer with time and frequencies
 # Create a unique folder name based on hyperparameters
@@ -66,30 +64,29 @@ processing_method = "Welch"
 folder_name = f"loc_{location}_wind_{time_window_size}_meth_{processing_method}_nperseg_vary"
 
 visualizer = Visualizer(time, output_dir="results")
-labels=["Base X", "Base Y", "Base Z", "Stair 1 X", "Stair 1 Y", "Stair 1 Z", "Stair 2 Z", "Vitral Z"]
+labels = np.array(["Base X", "Base Y", "Base Z", "Stair 1 X", "Stair 1 Y", "Stair 1 Z", "Stair 2 Z", "Vitral Z"])[selected_indices]
 
-analyzer = FrequencyAnalyzer(detrended_data, time)
-
-fs = 1 / np.mean(np.diff(time))
+analyzer = ModalFrequencyAnalyzer(data, time)
 
 nperseg_list = [256, 512, 1024, 2048, 4096, 8192]
 fig, ax = plt.subplots(len(nperseg_list), 1, figsize=(5, 20))
 for i, nperseg in enumerate(nperseg_list):
     # Compute PSD using Welch's method
-    freqs, psd_matrix = analyzer.compute_psd_matrix(fs, selected_indices, nperseg=nperseg)
+    freqs, _ = analyzer.compute_psd_matrix(nperseg=nperseg)
 
     # Compute the correlation matrix
-    correlation_matrix = analyzer.compute_correlation_matrix(psd_matrix)
+    analyzer.compute_coherence_matrix()
 
     # Perform SVD of the PSD matrix and correlation matrix
-    U_PSD, S_PSD, V_PSD = analyzer.perform_svd(psd_matrix)
-    U_corr, S_corr, V_corr = analyzer.perform_svd(correlation_matrix)
+    U_PSD, S_PSD, V_PSD = analyzer.perform_svd_psd()
+    U_coh, S_coh, V_coh = analyzer.perform_svd_coherence()
 
     # Get the PP index
-    P1, P2, P3 = analyzer.get_pp_index(correlation_matrix, S_corr)
+    P1, P2, P3 = analyzer.compute_pp_index()
 
     # Identify and print the mode frequency
-    peaks = analyzer.identify_peaks(freqs, P3, distance=1)
+    peak_picker = PeakPicker(analyzer)
+    peaks = peak_picker.identify_peaks_1(P3, S_PSD[:,0], distance=distance1, sigma=sigma, ranges_to_check=ranges_to_check)
 
     # Apply Gaussian smoothing
     P1_smooth = gaussian_filter1d(P1, sigma=14)
@@ -117,4 +114,4 @@ for i, nperseg in enumerate(nperseg_list):
 ax[-1].set_xlabel("Frequency [Hz]")
 
 fig.tight_layout()
-visualizer._save_figure(fig, "PP_index_compare_results", folder_name)
+visualizer._save_figure(fig, "PP_index_compare_results_method1", folder_name)

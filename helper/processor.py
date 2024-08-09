@@ -2,13 +2,14 @@ import numpy as np
 from scipy import signal
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
+import PyOMA as oma
 
 class ModalFrequencyAnalyzer:
     """
     A class for performing modal frequency analysis, including SVD on both PSD and coherence matrices.
     """
 
-    def __init__(self, data, time):
+    def __init__(self, data=None, time=None):
         """
         Initializes the ModalFrequencyAnalyzer with data and time vector.
 
@@ -46,32 +47,31 @@ class ModalFrequencyAnalyzer:
         self.fft_data = np.fft.rfft(self.data, axis=0)
         return self.freq_fft, self.fft_data
 
-    def compute_psd_matrix(self, selected_indices, nperseg=1024):
+    def compute_psd_matrix(self, nperseg=1024):
         """
         Computes the PSD matrix for selected sensors using Welch's method.
 
         Parameters:
             fs (float): Sampling frequency.
-            selected_indices (list of int): Indices of the selected sensors.
             nperseg (int): Length of each segment for Welch's method.
 
         Returns:
             tuple: Frequencies and the PSD matrix for the selected sensors.
         """
         fs = 1 / np.mean(np.diff(self.time))
-        n_sensors = len(selected_indices)
+        n_sensors = len(self.data[0])
         self.psd_matrix = np.zeros((nperseg // 2 + 1, n_sensors, n_sensors), dtype=complex)
     
         # Calculate the PSD for each sensor (diagonal elements of the matrix)
-        self.freq_psd, psd = signal.welch(self.data[:, selected_indices[0]], fs=fs, nperseg=nperseg)
+        self.freq_psd, psd = signal.welch(self.data[:, 0], fs=fs, nperseg=nperseg)
         self.psd_matrix[:, 0, 0] = psd  # Store the PSD for the first sensor
         
         for i in range(1, n_sensors):
-            _, psd = signal.welch(self.data[:, selected_indices[i]], fs=fs, nperseg=nperseg)
+            _, psd = signal.welch(self.data[:, i], fs=fs, nperseg=nperseg)
             self.psd_matrix[:, i, i] = psd
         for i in range(n_sensors):
             for j in range(i+1, n_sensors):
-                _, csd = signal.csd(self.data[:, selected_indices[i]], self.data[:, selected_indices[j]], fs=fs, nperseg=nperseg)
+                _, csd = signal.csd(self.data[:, i], self.data[:, j], fs=fs, nperseg=nperseg)
                 self.psd_matrix[:, i, j] = csd
                 self.psd_matrix[:, j, i] = np.conj(csd)
 
@@ -124,7 +124,7 @@ class ModalFrequencyAnalyzer:
         self.U_coherence, self.S_coherence, self.V_coherence = np.linalg.svd(self.coherence_matrix, full_matrices=False)
         return self.U_coherence, self.S_coherence, self.V_coherence
 
-    def get_pp_index(self):
+    def compute_pp_index(self):
         """
         Computes the PP index from the singular values.
 
@@ -167,10 +167,6 @@ class PeakPicker:
             ValueError: If the analyzer is not properly initialized.
         """
         self.analyzer = analyzer
-        
-        # Check if the analyzer has been initialized correctly
-        if self.analyzer.S_psd is None or self.analyzer.P3 is None:
-            raise ValueError("The analyzer has not been initialized correctly. Ensure that compute_psd_matrix() is called.")
 
     @staticmethod
     def compute_mac(mode_shape1, mode_shape2):
@@ -279,7 +275,7 @@ class PeakPicker:
             refined_peaks.append(search_range[0] + refined_peak + min_idx)
         return np.unique(np.array(refined_peaks))
 
-    def identify_peaks_1(self, freqs, PP, PSD_sigma, band=(8, 24), distance=10, sigma=14, curvature_threshold=-0.004, ranges_to_check=[(10.5, 12.5), (15.5, 17.5), (21.5, 23.5)]):
+    def identify_peaks_1(self, PP, PSD_sigma, band=(8, 24), distance=10, sigma=14, curvature_threshold=-0.004, ranges_to_check=[(10.5, 12.5), (15.5, 17.5), (21.5, 23.5)]):
         """
         Identifies peaks in the PP and PSD_sigma signals within a specified frequency band, refines the peak positions 
         by checking the non-smoothed data within the given ranges, and selects the peak with the largest curvature.
@@ -297,12 +293,13 @@ class PeakPicker:
         Returns:
             numpy.ndarray: List of indices of the refined peaks, selecting the best one from either PP or PSD_sigma.
         """
+        # Access frequencies from the analyzer instance
+        freqs = self.analyzer.freq_psd
 
         def get_peaks_and_curvatures(signal_data):
             # Extract indices within the specified frequency band
             band_min, band_max = band
-            min_idx = np.searchsorted(freqs, band_min)
-            max_idx = np.searchsorted(freqs, band_max)
+            min_idx, max_idx = self.extract_indices_within_band(freqs, band_min, band_max)
             band_freqs = freqs[min_idx:max_idx + 1]
             band_S = signal_data[min_idx:max_idx + 1]
             
@@ -318,7 +315,6 @@ class PeakPicker:
             curvatures = []
             for peak in smooth_peaks:
                 # if curvature[peak] < curvature_threshold:
-                # print('  -- ', peak)
                 peak_freq = band_freqs[peak]
                 for r in ranges_to_check:
                     if r[0] <= peak_freq <= r[1]:
@@ -340,6 +336,7 @@ class PeakPicker:
         # print("refined_peaks_PP", refined_peaks_PP, freqs[refined_peaks_PP])
         refined_peaks_PSD_sigma, curvatures_PSD_sigma = get_peaks_and_curvatures(PSD_sigma)
         # print("refined_peaks_PSD_sigma", refined_peaks_PSD_sigma, freqs[refined_peaks_PSD_sigma])
+
         # Initialize a list to store the best peaks for each range
         selected_peaks = []
 
@@ -360,9 +357,7 @@ class PeakPicker:
             
             # Get PSD_sigma peaks and curvatures within the current range
             for i, peak in enumerate(refined_peaks_PSD_sigma):
-                # print(' -t', range_min_freq, freqs[peak], range_max_freq)
                 if range_min_freq <= freqs[peak] <= range_max_freq:
-                    # print('   oo ', peak)
                     peaks_in_range_PSD_sigma.append(peak)
                     curvatures_in_range_PSD_sigma.append(curvatures_PSD_sigma[i])
             
@@ -376,9 +371,9 @@ class PeakPicker:
                 selected_peaks.append(best_peak)
                 # ranges_to_check[i] = (math.floor(freqs[best_peak]), math.ceil(freqs[best_peak]))
                 
-        return np.unique(np.array(selected_peaks)), ranges_to_check
+        return np.unique(np.array(selected_peaks))
 
-    def identify_peaks_2(self, freqs, S, U, band=(8, 24), distance=2, sigma=14, mac_threshold=0.9, n_modes=4, time=0, results_prev=None, 
+    def identify_peaks_2(self, S, U, band=(8, 24), distance=2, mac_threshold=0.9, n_modes=4, results_prev=None, 
                                p=None, dt=None):
         """
         Detects all local maxima within a given frequency band, computes the MAC matrix using provided eigenvectors,
@@ -390,12 +385,13 @@ class PeakPicker:
             U (array-like): Array of eigenvectors (mode shapes) for the frequencies.
             band (tuple): Frequency band within which to detect peaks (default is (8, 24)).
             distance (int): Minimum distance between peaks (default is 10).
-            sigma (int): Standard deviation for Gaussian kernel to smooth the signal (default is 14).
             mac_threshold (float): Threshold for MAC value to consider peaks as the same mode (default is 0.8).
 
         Returns:
             selected_peaks (array-like): Indices of the final refined peaks.
         """
+        # Access frequencies from the analyzer instance
+        freqs = self.analyzer.freq_psd
         
         # Step 1: Detect all local maxima in the raw PSD array
         band_min_idx = np.searchsorted(freqs, band[0], side='left')
@@ -437,42 +433,42 @@ class PeakPicker:
                 max_idx = max(raw_peaks[mode_group])
                 mode_ranges.append((min_idx, max_idx))
 
-        # Plotting
-        fig0, ax0 = plt.subplots(1, 1, figsize=(14, 6))
-        fig1, ax1 = plt.subplots(1, 1, figsize=(20, 20))
+        # # Plotting
+        # fig0, ax0 = plt.subplots(1, 1, figsize=(14, 6))
+        # fig1, ax1 = plt.subplots(1, 1, figsize=(20, 20))
 
-        time = p*dt
+        # time = p*dt
         
-        # Plot S array
-        for min_idx, max_idx in mode_ranges:
-            ax0.semilogy(freqs[min_idx:max_idx+1], S[min_idx:max_idx+1], label=f'Mode Range: {freqs[min_idx]:.1f} to {freqs[max_idx]:.1f}')
-        ax0.semilogy(freqs, S, color='black', linestyle='--', alpha=0.3)
-        # ax0.scatter(freqs[raw_peaks], S[raw_peaks], color='red', label='Peaks')
-        ax0.set_xlim([band[0], band[1]])
-        ax0.set_xlabel('Frequency')
-        ax0.set_ylabel('PSD')
-        ax0.set_title('Signal with Detected Peaks and Mode Ranges')
-        # ax0.legend(framealpha=0.1, loc='lower center', fontsize=12)
+        # # Plot S array
+        # for min_idx, max_idx in mode_ranges:
+        #     ax0.semilogy(freqs[min_idx:max_idx+1], S[min_idx:max_idx+1], label=f'Mode Range: {freqs[min_idx]:.1f} to {freqs[max_idx]:.1f}')
+        # ax0.semilogy(freqs, S, color='black', linestyle='--', alpha=0.3)
+        # # ax0.scatter(freqs[raw_peaks], S[raw_peaks], color='red', label='Peaks')
+        # ax0.set_xlim([band[0], band[1]])
+        # ax0.set_xlabel('Frequency')
+        # ax0.set_ylabel('PSD')
+        # ax0.set_title('Signal with Detected Peaks and Mode Ranges')
+        # # ax0.legend(framealpha=0.1, loc='lower center', fontsize=12)
         
-        # Plot MAC matrix
-        freq_indices = np.arange(len(raw_peaks))
-        freq_labels = [f'{f:.1f}' for f in freqs[raw_peaks]]  # Round frequency labels
+        # # Plot MAC matrix
+        # freq_indices = np.arange(len(raw_peaks))
+        # freq_labels = [f'{f:.1f}' for f in freqs[raw_peaks]]  # Round frequency labels
         
-        cax = ax1.imshow(MAC_modified, interpolation='none', aspect='equal')  # Use gray colormap for binary matrix
-        fig1.colorbar(cax, ax=ax1, label='MAC Value')
-        ax1.set_xticks(freq_indices)
-        ax1.set_xticklabels(freq_labels, rotation=90)
-        ax1.set_yticks(freq_indices)
-        ax1.set_yticklabels(freq_labels)
-        ax1.set_title('MAC Matrix')
-        ax1.set_xlabel('Frequency')
-        ax1.set_ylabel('Frequency')
-        fig0.suptitle("Time = "+str(time), fontsize=16)
-        fig0.tight_layout()
-        fig0.savefig('PSD'+str(p)+'.png')
-        fig1.suptitle("Time = "+str(time), fontsize=16)
-        fig1.tight_layout()
-        fig1.savefig('MAC_Matrix'+str(p)+'.png')
+        # cax = ax1.imshow(MAC_modified, interpolation='none', aspect='equal')  # Use gray colormap for binary matrix
+        # fig1.colorbar(cax, ax=ax1, label='MAC Value')
+        # ax1.set_xticks(freq_indices)
+        # ax1.set_xticklabels(freq_labels, rotation=90)
+        # ax1.set_yticks(freq_indices)
+        # ax1.set_yticklabels(freq_labels)
+        # ax1.set_title('MAC Matrix')
+        # ax1.set_xlabel('Frequency')
+        # ax1.set_ylabel('Frequency')
+        # fig0.suptitle("Time = "+str(time), fontsize=16)
+        # fig0.tight_layout()
+        # fig0.savefig('PSD'+str(p)+'.png')
+        # fig1.suptitle("Time = "+str(time), fontsize=16)
+        # fig1.tight_layout()
+        # fig1.savefig('MAC_Matrix'+str(p)+'.png')
 
         # # Step 5: Fit a bell curve on each identified range
         # def gaussian(x, a, x0, sigma):
@@ -520,3 +516,19 @@ class PeakPicker:
                         results[peak_freq] = (results_prev[freq][0], peak_mode_shape)
                         break
             return selected_peaks, results
+
+    def identify_peaks_pyoma(self):
+        data = self.analyzer.data
+        fs = 1 / np.mean(np.diff(self.analyzer.time))
+        # Apply FDD method directly
+        FDD = oma.FDDsvp(data, fs)
+
+        # Define approximate peaks identified from the plot
+        FreQ = [11.29, 16.05, 22.54]
+
+        # Extract the modal properties
+        # Res_FDD = oma.FDDmodEX(FreQ, FDD[1])
+        Res_EFDD = oma.EFDDmodEX(FreQ, FDD[1], method='EFDD')
+        # Res_FSDD = oma.EFDDmodEX(FreQ, FDD[1], method='FSDD', npmax = 35, MAClim=0.95)
+        plt.close()
+        return Res_EFDD['Frequencies'] # Res_FSDD['Frequencies']
