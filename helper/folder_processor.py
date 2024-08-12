@@ -15,7 +15,7 @@ class FolderProcessor:
     frequency ranges.
     """
 
-    def __init__(self, selected_indices, folder_path, batch_size, n_mem, n_modes, pp_args, scaling_factors, methods=[1], ranges_display=[(8,13), (13,18), (18,24)]):
+    def __init__(self, selected_indices, location, folder_path, batch_size, pp_args, scaling_factors, methods=[1], ranges_display=[(8,13), (13,18), (18,24)]):
         """
         Initializes the FolderProcessor with parameters for processing data.
 
@@ -31,16 +31,18 @@ class FolderProcessor:
         """
         self.folder_path = folder_path
         self.batch_size = batch_size
-        self.n_mem = n_mem
-        self.n_modes = n_modes
         self.pp_args = pp_args
         self.scaling_factors = scaling_factors
         self.loader = DataLoader(selected_indices, folder_path=folder_path, batch_size=batch_size, scaling_factors=scaling_factors)
         self.analyzer = ModalFrequencyAnalyzer()
         self.peak_picker = PeakPicker(self.analyzer)
-        self.frequency_data = []
         self.methods = methods
         self.ranges_display = ranges_display
+        self.location = location
+        self.n_channels = len(self.ranges_display)
+        self.n_methods = len(self.methods)
+        self.n_files = len(self.loader)
+        self.detected_freqs = np.full((self.n_channels, self.n_methods, self.n_files), np.nan)
 
     def process(self):
         """
@@ -50,12 +52,7 @@ class FolderProcessor:
         vibration frequencies for each batch, and stores these frequencies in the `frequency_data` attribute.
         """
         # Initialize arrays to collect frequencies
-        n_channels = len(self.ranges_display)
-        n_methods = len(self.methods)
-        n_files = len(self.loader)
-        freqs = np.full((n_channels, n_methods, n_files), np.nan)
-
-        band = (self.ranges_display[0][0], self.ranges_display[-1][-1])
+        f_window = (self.ranges_display[0][0], self.ranges_display[-1][-1])
         results = None
 
         for idx, (time, data) in enumerate(tqdm(self.loader, desc="Processing Batches", unit="batch")):
@@ -78,19 +75,68 @@ class FolderProcessor:
                     peaks = self.peak_picker.identify_peaks_1(self.analyzer.P3, self.analyzer.S_psd[:, 0], distance=self.pp_args['distance1'], sigma=self.pp_args['sigma'], ranges_to_check=self.pp_args['ranges_to_check']) 
                 elif method == 2 :
                     label = 'method 2'
-                    peaks, results = self.peak_picker.identify_peaks_2(self.analyzer.S_psd[:, 0], self.analyzer.U_psd, band=band, distance=self.pp_args['distance2'], mac_threshold=self.pp_args['mac_threshold'], n_modes=self.n_modes, results_prev=results) # WIP 
+                    peaks, results = self.peak_picker.identify_peaks_2(self.analyzer.S_psd[:, 0], self.analyzer.U_psd, band=f_window, distance=self.pp_args['distance2'], mac_threshold=self.pp_args['mac_threshold'], n_modes=self.pp_args['n_modes'], n_mem=self.pp_args['n_mem'], results_prev=results, p=idx, dt=0.01) # WIP 
                 elif method == 3:
                     label = 'PyOMA'
                     peaks = self.peak_picker.identify_peaks_pyoma()
+                elif method == 4 :
+                    label = 'method 2'
+                    peaks, results = self.peak_picker.identify_peaks_2(self.analyzer.P3, self.analyzer.U_psd, band=f_window, distance=self.pp_args['distance2'], mac_threshold=self.pp_args['mac_threshold'], n_modes=self.pp_args['n_modes'], n_mem=self.pp_args['n_mem'], results_prev=results, p=idx, dt=0.01) # WIP 
+                
                 else:
                     raise ValueError(f"Unsupported method {method}")
-                
+
                 if method != 3 : mode_freqs, mode_shapes = self.peak_picker.identify_mode_shapes(self.analyzer.U_psd, peaks)
                 else : mode_freqs = peaks
+                if method == 2: print(mode_freqs)
 
                 for j, band in enumerate(self.ranges_display):
                     band_min, band_max = band
                     mask = (mode_freqs >= band_min) & (mode_freqs < band_max)
-                    if len(mode_freqs[mask]) > 0: freqs[j, i, idx] = mode_freqs[mask]
+                    if len(mode_freqs[mask]) > 1 : val = mode_freqs[ np.argmin(np.abs(np.array(mode_freqs[mask]) - self.detected_freqs[j, i, idx])) ]
+                    else : val = mode_freqs[mask]
+                    if len(mode_freqs[mask]) > 0: 
+                        self.detected_freqs[j, i, idx] = val 
+                    
+            if idx > 100 : break # WIP
 
-        print(freqs) # PLOT INSTEAD OF PRINTING - WIP
+        print(self.detected_freqs) # PLOT INSTEAD OF PRINTING - WIP
+        self.plot_frequencies(show=True)
+
+    def plot_frequencies(self, show=False):
+        """
+        Plots detected frequencies in specified frequency ranges.
+
+        Parameters:
+            file_paths (list): List of file paths to process.
+            location (str): Location name or identifier used in processing.
+        """
+        file_duration = 1/6 # 10 minutes : 1 file duration in hours
+        time = np.linspace(0, self.n_files*file_duration, self.n_files)
+
+        # Create the plots
+        visualizer = Visualizer(time, output_dir="results")
+        processing_method = "Welch"
+        nperseg = self.pp_args['nperseg']
+        folder_name = f"loc_{self.location}_wd{600*self.batch_size}_meth_{processing_method}_nperseg_{nperseg}"
+
+        fig, ax = plt.subplots(self.n_channels, 1, figsize=(3.33*self.n_channels, 7), sharex=True)
+
+        linestyles_list = ['-', '--', '-.', ':']
+        linestyles = [linestyles_list[i % len(linestyles_list)] for i in range(self.n_methods)]
+        colors_list = ['blue', 'green', 'red', 'black']  
+        colors = [colors_list[i % len(colors_list)] for i in range(self.n_methods)]
+
+        labels = np.array(["method 0", "method 1", "method 2 PSD", "PyOMA", "method 2 PP"])[self.methods]
+
+        for i in range(self.n_channels):
+            for j, (label, linestyle, c) in enumerate(zip(labels, linestyles, colors)):
+                ax[i].plot(time, self.detected_freqs[i][j], label=label, color=c, linestyle=linestyle)  
+            ax[i].set_ylabel('f (Hz)')
+            ax[i].legend()       
+
+        ax[-1].set_xlabel('Time [h]')
+
+        fig.tight_layout()
+        if show: fig.show()
+        visualizer._save_figure(fig, "Detected_Frequencies", folder_name)

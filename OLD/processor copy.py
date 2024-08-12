@@ -380,7 +380,7 @@ class PeakPicker:
                 
         return np.unique(np.array(selected_peaks))
 
-    def identify_peaks_2(self, S, U, band=(8, 24), distance=2, mac_threshold=0.9, n_modes=4, n_mem=4, results_prev=None, p=None, dt=None):
+    def identify_peaks_2(self, PP, PSD_sigma, U, band=(8, 24), distance=2, mac_threshold=0.9, n_modes=4, n_mem=4, results_prev=None, p=None, dt=None):
         """
         Detects peaks within a specified frequency band by dividing the given frequency domain into similar mode ranges using
         the MAC (Modal Assurance Criterion) matrix. The function then selects the argmax within the ranges that best match 
@@ -388,7 +388,7 @@ class PeakPicker:
         detected ranges.
 
         Parameters:
-            S (numpy.ndarray): Power spectral density (PSD) matrix (or PP index).
+            PSD_sigma (numpy.ndarray): Power spectral density (PSD) matrix.
             U (numpy.ndarray): Array of eigenvectors (mode shapes) corresponding to the frequencies.
             band (tuple): Frequency band within which to detect peaks (default is (8, 24)).
             distance (int): Minimum distance between peaks in the frequency domain (default is 2).
@@ -403,6 +403,29 @@ class PeakPicker:
             selected_peaks (numpy.ndarray): Indices of the final detected peaks.
             results (numpy_ndarray): Updated array of results with the newly detected peaks.
         """
+
+        # Compute the second derivative (curvature) of the PSD arrays.
+        PP_curvatures = np.gradient(np.gradient(PP))
+        PSD_curvatures = np.gradient(np.gradient(PSD_sigma))
+        
+        S = PP
+
+        def select_peak_with_curvature(min_idx, max_idx):
+            # Extract the relevant portions of the arrays within the specified frequency band.
+            band_freqs = freqs[min_idx:max_idx + 1]
+            band_PP = PP[min_idx:max_idx + 1]
+            band_PSD_sigma = PSD_sigma[min_idx:max_idx + 1]
+
+            # Determine the indices of the maximum values within the band.
+            PP_argmax = np.argmax(band_PP)
+            PSD_sigma_argmax = np.argmax(band_PSD_sigma)
+
+            # Compare curvatures to decide which peak to select.
+            if PP_curvatures[PP_argmax] > PSD_curvatures[PSD_sigma_argmax]:
+                return PP_argmax + min_idx
+            else:   
+                return PSD_sigma_argmax + min_idx
+
         # Step 1: Access frequency values and define equally spaced frequency domain within the band.
         freqs = self.analyzer.freq_psd
         band_min_idx, band_max_idx = self.extract_indices_within_band(freqs, band[0], band[1])
@@ -492,67 +515,47 @@ class PeakPicker:
             self.idx_method2 += 1
 
         # # Uncomment the following line to enable plotting for debugging.
-        # self.plot_debug(band, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt)
+        # self.plot_debug(freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt)
 
-        return selected_peaks, results
+        return selected_peaks,
 
-    def plot_debug(self, band, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt):
+    def plot_debug(self, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt):
         """
-        Plots the signal with detected ranges and the modified MAC matrix for debugging purposes.
+        Plots the signal with detected peaks and the MAC matrix for debugging purposes.
 
         Parameters:
-            band (tuple): Frequency band within which the peaks are detected.
-            freqs (numpy.ndarray): Array of frequency values.
-            S (numpy.ndarray): Signal values (e.g., power spectral density) corresponding to the frequencies.
-            f_domain (numpy.ndarray): Indices of the frequency domain within the specified band.
-            MAC_modified (numpy.ndarray): Modified MAC matrix after applying the MAC threshold.
-            mode_ranges (numpy.ndarray): List of tuples representing the frequency ranges corresponding to detected modes.
-            selected_ranges (numpy.ndarray): Indices of the selected frequency ranges among the detected mode ranges.
+            freqs (array-like): Array of frequency values.
+            S (array-like): Signal values corresponding to the frequencies.
+            f_domain (array-like): Frequency domain indices within the specified band.
+            MAC_modified (array-like): Modified MAC matrix with applied threshold.
+            mode_ranges (array-like): List of frequency ranges corresponding to detected modes.
+            selected_ranges (array-like): Indices of the selected frequency ranges.
             p (int): Index or identifier for the current time step.
-            dt (float): Time step duration used for frequency domain analysis.
-
-        Description:
-            - The method generates two plots:
-                1. The first plot displays the signal (S) with highlighted detected peaks and mode ranges within the specified frequency band.
-                2. The second plot shows the modified MAC matrix, which represents the modal assurance criterion values between the mode shapes.
-            - The function saves the plots as images with filenames that include the current time step `p`.
+            dt (float): Time step duration for frequency domain analysis.
         """
+        # Plotting the signal with detected peaks and mode ranges
         fig0, ax0 = plt.subplots(1, 1, figsize=(14, 6))
         fig1, ax1 = plt.subplots(1, 1, figsize=(20, 20))
 
-        time = p*dt
+        time = p * dt
         
         # Plot S array
         for min_idx, max_idx in np.array(mode_ranges)[selected_ranges]:
-            ax0.semilogy(freqs[min_idx:max_idx+1], S[min_idx:max_idx+1], label=f'Mode Range: {freqs[min_idx]:.1f} to {freqs[max_idx]:.1f}')
+            ax0.semilogy(freqs[min_idx:max_idx + 1], S[min_idx:max_idx + 1], label=f'Mode Range: {freqs[min_idx]:.1f} to {freqs[max_idx]:.1f}')
         ax0.semilogy(freqs, S, color='black', linestyle='--', alpha=0.3)
-        # ax0.scatter(freqs[raw_peaks], S[raw_peaks], color='red', label='Peaks')
         ax0.set_xlim([band[0], band[1]])
         ax0.set_xlabel('Frequency')
         ax0.set_ylabel('PSD')
         ax0.set_title('Signal with Detected Peaks and Mode Ranges')
-        # ax0.legend(framealpha=0.1, loc='lower center', fontsize=12)
         
         # Plot MAC matrix
         freq_indices = np.arange(len(f_domain))
-        freq_labels = [f'{f:.1f}' for f in freqs[f_domain]]  # Round frequency labels
+        ax1.imshow(MAC_modified, cmap='viridis', extent=[freq_indices[0], freq_indices[-1], freq_indices[-1], freq_indices[0]])
+        ax1.set_title('Modified MAC Matrix')
+        ax1.set_xlabel('Frequency Index')
+        ax1.set_ylabel('Frequency Index')
         
-        cax = ax1.imshow(MAC_modified, interpolation='none', aspect='equal')  # Use gray colormap for binary matrix
-        fig1.colorbar(cax, ax=ax1, label='MAC Value')
-        ax1.set_xticks(freq_indices)
-        ax1.set_xticklabels(freq_labels, rotation=90)
-        ax1.set_yticks(freq_indices)
-        ax1.set_yticklabels(freq_labels)
-        ax1.set_title('MAC Matrix')
-        ax1.set_xlabel('Frequency')
-        ax1.set_ylabel('Frequency')
-        fig0.suptitle("Time = "+str(time), fontsize=16)
-        fig0.tight_layout()
-        fig0.savefig('PSD'+str(p)+'.png')
-        fig1.suptitle("Time = "+str(time), fontsize=16)
-        fig1.tight_layout()
-        fig1.savefig('MAC_Matrix'+str(p)+'.png')
-
+        plt.show()
 
     def identify_peaks_pyoma(self):
         data = self.analyzer.data
