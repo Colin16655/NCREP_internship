@@ -88,7 +88,6 @@ class FolderProcessor:
 
                 if method != 3 : mode_freqs, mode_shapes = self.peak_picker.identify_mode_shapes(self.analyzer.U_psd, peaks)
                 else : mode_freqs = peaks
-                if method == 2: print(mode_freqs)
 
                 for j, band in enumerate(self.ranges_display):
                     band_min, band_max = band
@@ -98,9 +97,8 @@ class FolderProcessor:
                     if len(mode_freqs[mask]) > 0: 
                         self.detected_freqs[j, i, idx] = val 
                     
-            if idx > 100 : break # WIP
+            if idx > 25 : break # WIP - for tests with partial 5 AM data
 
-        print(self.detected_freqs) # PLOT INSTEAD OF PRINTING - WIP
         self.plot_frequencies(show=True)
 
     def plot_frequencies(self, show=False):
@@ -111,14 +109,14 @@ class FolderProcessor:
             file_paths (list): List of file paths to process.
             location (str): Location name or identifier used in processing.
         """
-        file_duration = 1/6 # 10 minutes : 1 file duration in hours
+        file_duration = 1/6 * self.batch_size # 10 minutes : 1 file duration in hours
         time = np.linspace(0, self.n_files*file_duration, self.n_files)
 
         # Create the plots
         visualizer = Visualizer(time, output_dir="results")
         processing_method = "Welch"
         nperseg = self.pp_args['nperseg']
-        folder_name = f"loc_{self.location}_wd{600*self.batch_size}_meth_{processing_method}_nperseg_{nperseg}"
+        folder_name = f"loc_{self.location}_wd{600*self.batch_size}_meth_{processing_method}_nperseg_{nperseg}_sigma_{self.pp_args['sigma']}"
 
         fig, ax = plt.subplots(self.n_channels, 1, figsize=(3.33*self.n_channels, 7), sharex=True)
 

@@ -8,7 +8,6 @@ from scipy.interpolate import CubicSpline
 from scipy.interpolate import UnivariateSpline
 from scipy.ndimage import gaussian_filter1d
 
-
 class Visualizer:
     def __init__(self, time, output_dir="figures"):
         """
@@ -21,9 +20,11 @@ class Visualizer:
         """
         self.time = time
         self.output_dir = output_dir
+        self.colors = ['black', 'r', 'b', 'g']
+        self.styles = ['-', '--', '-.', ':']
 
-    @staticmethod
-    def get_color_array(n):
+    def get_color_array(self, n):
+
         # Get the default color cycle from Matplotlib
         color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
         # Repeat the color cycle if n is greater than the length of the default color cycle
@@ -174,6 +175,41 @@ class Visualizer:
         fig.tight_layout()
         self._save_figure(fig, "PSD_results", folder_name)
         if show: fig.show()
+
+    def plot_coherence(self, frequencies, coherence_matrix, peaks, folder_name, filename='Coherence', show=False):
+        """
+        Plots the coherence matrix (diagonal elements only) on a semi-logarithmic scale and saves the figures.
+
+        Parameters:
+            frequencies (numpy.ndarray): Array of frequency values corresponding to the coherence data.
+            coherence_matrix (numpy.ndarray): 3D array containing the coherence data, with dimensions (num_frequencies, num_channels, num_channels).
+            peaks (numpy.ndarray): Array containing the detected peak indices.
+            folder_name (str): Name of the folder where the figures will be saved.
+            filename (str): Name of the file to save the plot as. Defaults to 'Coherence'.
+            show (bool): If True, the figures will be displayed interactively. Defaults to False.
+
+        Returns:
+            None
+        """
+        fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+        colors = self.get_color_array(6)
+        idx = 0
+        names = ["1X", "1Y", "1Z", "2Z"]
+        for i in range(len(coherence_matrix[0])):
+            for j in range(i+1, len(coherence_matrix[0])):
+                ax.semilogy(frequencies, np.real(coherence_matrix[:, i, j]), color=colors[idx], linewidth=1.5, label=f"{names[i]}-{names[j]}")
+                idx += 1
+        ax.semilogy(frequencies, np.ones_like(frequencies), linestyle='--', color='black')
+        ax.set_ylabel("Coherence")
+        ax.set_xlabel("f [Hz]")
+        ax.set_xlim(8, 24)
+        ax.legend(loc='lower center', ncol=3, framealpha=0.5)
+        fig.tight_layout()
+
+        self._save_figure(fig, filename, folder_name)
+        if show:
+            plt.show()
+
 
     def plot_sigmas_old(self, frequencies, S_PSD, S_corr, folder_name="", sigma=14, show=False):
         """
@@ -347,18 +383,17 @@ class Visualizer:
 
         # Plot non-smoothed and smoothed curves
         for i, P in enumerate(PPS):
-            label_raw = f"P{i+1} (Raw)"
-            label_smooth = f"P{i+1} (Smoothed)"
+            label_raw = f"$P_{i+1}$ (Raw)"
             color = colors[i % len(colors)]
             ax.semilogy(freqs, P, label=label_raw, linestyle='dotted', color=color)
-            ax.semilogy(freqs, PPS_smooth[i], label=label_smooth, linestyle='solid', color=color)
+            ax.semilogy(freqs, PPS_smooth[i], linestyle='solid', color=color)
 
         # Scatter plot for the peaks (using the first PP index for peaks visualization)
         if len(PPS) > 0:
             ax.scatter(freqs[peaks], PPS[-1][peaks], color='black', marker='x', label='Peaks')
 
-        ax.set_ylabel("PP index")
-        ax.set_xlabel("Frequency [Hz]")
+        ax.set_ylabel("PP index", fontsize=18)
+        ax.set_xlabel("Frequency [Hz]", fontsize=18)
         ax.legend(framealpha=0.5)
         ax.set_xlim(8, 24)
         ax.grid(True)

@@ -39,13 +39,13 @@ file_paths_24 = [
 ]
 
 ### USER ###
-file_paths = file_paths_24[:4]
-location = "Lello_Jul24_stairs"
+file_paths = file_paths_23[:]
+location = "Lello_Jul23_stairs"
 nperseg = 1024 # 256, 512, 1024, 2048, 4096, 8192
 selected_indices = [3, 4, 5, 6]  # Indices of the selected sensors : stair
 distance0 = 1 # for pp method 0
 distance1 = 10 # for peak picking method 
-sigma = 14 # for pp method
+sigma = 8 # for pp method
 ranges_to_check = [(10.5, 12.5), (15.5, 17.5), (21.5, 23.5)] # for pp method
 ### USER ###
 
@@ -113,6 +113,7 @@ peaks = peak_picker.identify_peaks_1(P3, S_PSD[:, 0], distance=distance1, sigma=
 # Visualize the singular values
 visualizer.plot_sigmas(freqs, S_PSD, peaks, folder_name, filename='PSD_SVD_method1')
 visualizer.plot_pp_index(freqs, [P1, P2, P3], peaks, folder_name, filename='PP_indices_method1')
+visualizer.plot_coherence(freqs, coherence_matrix, peaks, folder_name, filename='Coherence')
 
 mode_frequency, mode_shape = peak_picker.identify_mode_shapes(U_PSD, peaks)
 print(f"Identified mode frequencies, method 1: {mode_frequency} Hz")
