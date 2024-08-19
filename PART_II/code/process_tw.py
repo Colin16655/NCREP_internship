@@ -85,9 +85,9 @@ class ProcessTW:
         self.NI = 0.0
         for i in range(len(self.medoid_indices_)):
             for j in range(i+1, len(self.medoid_indices_)):
-                i = self.medoid_indices_[i]
-                j = self.medoid_indices_[j]
-                self.NI = max(self.NI, self.D[i, j])
+                I = self.medoid_indices_[i]
+                J = self.medoid_indices_[j]
+                self.NI = max(self.NI, self.D[I, J])
         return self.NI
 
     def plot_D(self, folder_name, idx):

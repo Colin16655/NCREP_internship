@@ -40,11 +40,10 @@ class ProcessFolder:
             analysis.compute_Q()
             if idx >= self.S-1:
                 analysis.compute_D()
-                analysis.plot_D(self.folder_name, idx)
-                analysis.apply_k_medoids(k=2)
+                # if idx % 100 == 0: analysis.plot_D(self.folder_name, idx)
+                analysis.apply_k_medoids(k=3)
                 NI = analysis.compute_NI()
                 self.NI_values[idx] = NI
-
             if idx >= self.S:
                 CB = self.compute_CB(self.NI_values[max(idx-self.S+1, self.S-1):idx+1])
                 DI = NI - CB
@@ -81,20 +80,21 @@ class ProcessFolder:
         """
         Plot the evolution of the NI, CB, NI+CB, DI indices over time.
         """
-        fig, ax = plt.subplots(5, 1, figsize=(10, 10))
+        fig, ax = plt.subplots(4, 1, figsize=(10, 10))
         # Share the x-axis among axes 1 to 4
-        for i in range(1, 5):
+        for i in range(1, 4):
             ax[i].sharex(ax[1])
 
         colors = ['r', 'g', 'b', 'k']
         labels = ["1X", "1Y", "1Z", "2Z"]
         data = self.loader.load_data()[1]
-        for i in range(self.p):
-            ax[0].plot(data[:, i], color=colors[i], label=labels[i])
-        ax[1].plot(self.NI_values, color='k')
-        ax[2].plot(self.CB_values, color='b', linestyle='-.')
-        ax[3].plot(self.NI_values, color='k', label=('NI'))
-        ax[3].plot(self.CB_values, color='b', linestyle='-.', label=('CB'))
+        # for i in range(self.p):
+            # ax[0].plot(data[:, i], color=colors[i], label=labels[i])
+        time = np.linspace(0, 600*len(self.loader.file_paths), len(self.loader))
+        ax[0].plot(time, self.NI_values, color='k')
+        ax[1].plot(time, self.CB_values, color='b', linestyle='-.')
+        ax[2].plot(time, self.NI_values, color='k', label=('NI'))
+        ax[2].plot(time, self.CB_values, color='b', linestyle='-.', label=('CB'))
 
         # Separate the indices and values for positive and negative DI values
         indices = np.arange(len(self.DI_values))
@@ -104,20 +104,24 @@ class ProcessFolder:
         positive_values = self.DI_values[self.DI_values > 0]
         negative_values = self.DI_values[self.DI_values < 0]
 
-        # Plot the positive DI values in red
-        ax[4].stem(positive_indices, positive_values, linefmt='r-', markerfmt='ro', basefmt=" ", use_line_collection=True)
-        
-        # Plot the negative DI values in green
-        ax[4].stem(negative_indices, negative_values, linefmt='g-', markerfmt='go', basefmt=" ", use_line_collection=True)
+        # Generate the corresponding time values for positive and negative indices
+        positive_time = time[positive_indices]
+        negative_time = time[negative_indices]
 
-        ax[0].set_ylabel(f'Accel. [mG]')
-        ax[1].set_ylabel('NI')
-        ax[2].set_ylabel('CB')
-        ax[3].set_ylabel('NI & CB')
-        ax[4].set_ylabel('DI')
+        # Plot the positive DI values in red on the stem plot
+        ax[3].stem(positive_time, positive_values, linefmt='r-', markerfmt='ro', basefmt=" ", use_line_collection=True)
+
+        # Plot the negative DI values in green on the stem plot
+        ax[3].stem(negative_time, negative_values, linefmt='g-', markerfmt='go', basefmt=" ", use_line_collection=True)
+
+        # ax[0].set_ylabel(f'Accel. [mG]')
+        ax[0].set_ylabel('NI')
+        ax[1].set_ylabel('CB')
+        ax[2].set_ylabel('NI & CB')
+        ax[3].set_ylabel('DI')
         
-        ax[0].legend()
-        ax[3].legend()
+        # ax[0].legend()
+        ax[2].legend()
 
         ax[-1].set_xlabel('Time Window')
         fig.tight_layout()
