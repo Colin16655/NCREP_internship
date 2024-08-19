@@ -47,7 +47,6 @@ class DataLoader:
         self.initialized = False
         self.batch_size = batch_size
         self.scaling_factors = scaling_factors
-        self.total_batches = 0
         self.time_offset = 0
 
         # Automatically call get_files_list if a folder path is provided
@@ -55,8 +54,7 @@ class DataLoader:
             self.file_paths = self.get_files_list()
 
         # Calculate the total number of batches
-        if self.file_paths:
-            self.total_batches = len(self.file_paths) // self.batch_size
+        self.total_batches = self._calculate_total_batches()
 
     def __iter__(self):
         """
@@ -70,11 +68,12 @@ class DataLoader:
         """
         Returns the next mini-batch of data.
         """
-        if self.current_batch_index >= len(self.file_paths) - self.batch_size + 1:
+        if self.current_batch_index > len(self.file_paths) - self.batch_size:
             raise StopIteration
 
         time, data = self._load_batch(self.current_batch_index)
-        self.current_batch_index += self.batch_size
+        if self.batch_size == 1: self.current_batch_index += 1
+        self.current_batch_index += self.batch_size // 2
         self.time_offset += len(time)  # Update the time offset
         return time, data
 
@@ -102,6 +101,23 @@ class DataLoader:
         """
         return self.total_batches
 
+    def _calculate_total_batches(self):
+        """
+        Calculate the total number of batches available based on the file paths and batch size.
+        """
+        if self.batch_size == 1:
+            # Special case when batch_size is 1
+            return len(self.file_paths)
+        elif self.batch_size == 0:
+            return 0
+
+        if not self.folder_path:
+            return len(self.file_paths) // self.batch_size
+        else:
+            # Calculating how many steps of half the batch size we can take
+            effective_steps = (len(self.file_paths) - self.batch_size) // (self.batch_size // 2)
+            return effective_steps + 1
+        
     def _load_batch(self, start_index):
         """
         Helper function to load a batch of data starting from the given index.

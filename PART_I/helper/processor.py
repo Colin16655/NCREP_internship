@@ -443,9 +443,9 @@ class PeakPicker:
 
         # Step 5: Evaluate and score frequency ranges based on previous results.
         score_ranges = np.zeros(len(mode_ranges))
-        which_mode = np.zeros((len(mode_ranges), n_modes + 1))
+        which_mode = np.zeros((len(mode_ranges), n_modes + 2))
         if self.idx_method2 > 0:
-            for i in range(n_modes + 1):
+            for i in range(n_modes + 2):
                 for j in range(self.idx_method2): 
                     f_to_check = results_prev[i, j]
                     if not np.isnan(f_to_check):
@@ -462,7 +462,7 @@ class PeakPicker:
                 score_ranges[k] = S[selected_peak]
 
         # Step 6: Select the highest-scoring frequency ranges.
-        potential_selected_ranges = np.argsort(score_ranges)[::-1][:n_modes + 1]
+        potential_selected_ranges = np.argsort(score_ranges)[::-1][:n_modes + 2]
         selected_ranges = []
         for i, temp in enumerate(potential_selected_ranges):
             if score_ranges[potential_selected_ranges[i]] != 0:
@@ -472,7 +472,7 @@ class PeakPicker:
         selected_ranges = np.array(selected_ranges)
         
         # Step 7: For each selected range, select the peak with the highest value.
-        selected_peaks = np.full(n_modes + 1, np.nan)
+        selected_peaks = np.full(n_modes + 2, np.nan)
         for i, idx in enumerate(selected_ranges):
             min_idx, max_idx = mode_ranges[idx]
             selected_peak = np.argmax(S[min_idx:max_idx + 1]) + min_idx
@@ -482,7 +482,7 @@ class PeakPicker:
                 selected_peaks[i] = selected_peak
 
         # Step 8: Update the results array with the newly detected peaks.
-        results = np.zeros((n_modes + 1, n_mem))
+        results = np.zeros((n_modes + 2, n_mem))
         if results_prev is not None:
             results[:, :self.idx_method2] = results_prev[:, :self.idx_method2]
 
@@ -532,7 +532,7 @@ class PeakPicker:
         ax0.set_ylabel('Singular Value')
         ax0.legend(framealpha=0.1, loc="lower right")
         
-        # Set the step size for selecting frequency labels (e.g., plot every 5th frequency)
+        # Set the step size for selecting frequreqs, Sency labels (e.g., plot every 5th frequency)
         step_size = 15
 
         # Plot MAC matrix

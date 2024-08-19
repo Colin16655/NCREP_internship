@@ -42,7 +42,6 @@ class FolderProcessor:
         self.n_channels = len(self.ranges_display)
         self.n_methods = len(self.methods)
         self.n_files = len(self.loader)
-        print(self.n_files)
         self.detected_freqs = np.full((self.n_channels, self.n_methods, self.n_files), np.nan)
 
     def process(self):
@@ -60,52 +59,50 @@ class FolderProcessor:
 
         for idx, (time, data) in enumerate(tqdm(self.loader, desc="Processing Batches", unit="batch")):
             self.analyzer.time = time
-            print(idx)
-            # self.analyzer.data = data
+            self.analyzer.data = data
 
-            # # Computation to initialize analyzer
-            # self.analyzer.compute_psd_matrix(nperseg=self.pp_args['nperseg'])
-            # self.analyzer.compute_coherence_matrix()
-            # self.analyzer.perform_svd_coherence()
-            # self.analyzer.perform_svd_psd()
-            # self.analyzer.compute_pp_index()
-            # for i, method in enumerate(self.methods):
-            #     # Compute frequencies (assuming this returns a numpy array of frequencies)
-            #     if method == 0:
-            #         label = 'method 0'
-            #         peaks = self.peak_picker.identify_peaks_0(self.analyzer.P3, distance=self.pp_args['distance0']) 
-            #     elif method == 1:
-            #         label = 'method 1'
-            #         peaks = self.peak_picker.identify_peaks_1(self.analyzer.P3, self.analyzer.S_psd[:, 0], distance=self.pp_args['distance1'], sigma=self.pp_args['sigma'], ranges_to_check=self.pp_args['ranges_to_check']) 
-            #     elif method == 2 :
-            #         label = 'method 2'
-            #         peaks, results = self.peak_picker.identify_peaks_2(self.analyzer.S_psd[:, 0], self.analyzer.U_psd, band=f_window, distance=self.pp_args['distance2'], mac_threshold=self.pp_args['mac_threshold'], n_modes=self.pp_args['n_modes'], n_mem=self.pp_args['n_mem'], results_prev=results, p=idx, dt=dt) 
-            #     elif method == 3:
-            #         label = 'PyOMA'
-            #         peaks = self.peak_picker.identify_peaks_pyoma()
-            #     elif method == 4 :
-            #         label = 'method 2'
-            #         peaks, results = self.peak_picker.identify_peaks_2(self.analyzer.P3, self.analyzer.U_psd, band=f_window, distance=self.pp_args['distance2'], mac_threshold=self.pp_args['mac_threshold'], n_modes=self.pp_args['n_modes'], n_mem=self.pp_args['n_mem'], results_prev=results, p=idx, dt=dt)
+            # Computation to initialize analyzer
+            self.analyzer.compute_psd_matrix(nperseg=self.pp_args['nperseg'])
+            self.analyzer.compute_coherence_matrix()
+            self.analyzer.perform_svd_coherence()
+            self.analyzer.perform_svd_psd()
+            self.analyzer.compute_pp_index()
+            for i, method in enumerate(self.methods):
+                # Compute frequencies (assuming this returns a numpy array of frequencies)
+                if method == 0:
+                    label = 'method 0'
+                    peaks = self.peak_picker.identify_peaks_0(self.analyzer.P3, distance=self.pp_args['distance0']) 
+                elif method == 1:
+                    label = 'method 1'
+                    peaks = self.peak_picker.identify_peaks_1(self.analyzer.P3, self.analyzer.S_psd[:, 0], distance=self.pp_args['distance1'], sigma=self.pp_args['sigma'], ranges_to_check=self.pp_args['ranges_to_check']) 
+                elif method == 2 :
+                    label = 'method 2'
+                    peaks, results = self.peak_picker.identify_peaks_2(self.analyzer.S_psd[:, 0], self.analyzer.U_psd, band=f_window, distance=self.pp_args['distance2'], mac_threshold=self.pp_args['mac_threshold'], n_modes=self.pp_args['n_modes'], n_mem=self.pp_args['n_mem'], results_prev=results, p=idx, dt=dt) 
+                elif method == 3:
+                    label = 'PyOMA'
+                    peaks = self.peak_picker.identify_peaks_pyoma()
+                elif method == 4 :
+                    label = 'method 2'
+                    peaks, results = self.peak_picker.identify_peaks_2(self.analyzer.P3, self.analyzer.U_psd, band=f_window, distance=self.pp_args['distance2'], mac_threshold=self.pp_args['mac_threshold'], n_modes=self.pp_args['n_modes'], n_mem=self.pp_args['n_mem'], results_prev=results, p=idx, dt=dt)
                 
-            #     else:
-            #         raise ValueError(f"Unsupported method {method}")
+                else:
+                    raise ValueError(f"Unsupported method {method}")
 
-            #     if method != 3 : mode_freqs, mode_shapes = self.peak_picker.identify_mode_shapes(self.analyzer.U_psd, peaks)
-            #     else : mode_freqs = peaks
+                if method != 3 : mode_freqs, mode_shapes = self.peak_picker.identify_mode_shapes(self.analyzer.U_psd, peaks)
+                else : mode_freqs = peaks
 
-            #     for j, band in enumerate(self.ranges_display):
-            #         band_min, band_max = band
-            #         mask = (mode_freqs >= band_min) & (mode_freqs < band_max)
-            #         # in case multiple modes are detected in the same band, we keep the closest to the previous value
-            #         if len(mode_freqs[mask]) > 1 : 
-            #             if not np.isnan(self.detected_freqs[j, i, idx]):
-            #                 val = mode_freqs[ np.argmin(np.abs(np.array(mode_freqs[mask]) - self.detected_freqs[j, i, idx])) ]
-            #             else : val = mode_freqs[mask][0]
-            #         else : val = mode_freqs[mask]
-            #         if len(mode_freqs[mask]) > 0: 
-            #             self.detected_freqs[j, i, idx] = val 
+                for j, band in enumerate(self.ranges_display):
+                    band_min, band_max = band
+                    mask = (mode_freqs >= band_min) & (mode_freqs < band_max)
+                    # in case multiple modes are detected in the same band, we keep the closest to the previous value
+                    if len(mode_freqs[mask]) > 1 : 
+                        if not np.isnan(self.detected_freqs[j, i, idx]):
+                            val = mode_freqs[ np.argmin(np.abs(np.array(mode_freqs[mask]) - self.detected_freqs[j, i, idx])) ]
+                        else : val = mode_freqs[mask][0]
+                    else : val = mode_freqs[mask]
+                    if len(mode_freqs[mask]) > 0: 
+                        self.detected_freqs[j, i, idx] = val 
                     
-            # if idx > 25 : break # WIP - for tests with partial 5 AM data
 
         self.plot_frequencies(show=False)
 
@@ -117,8 +114,8 @@ class FolderProcessor:
             file_paths (list): List of file paths to process.
             location (str): Location name or identifier used in processing.
         """
-        file_duration = 1/6 * self.batch_size # 10 minutes : 1 file duration in hours
-        time = np.linspace(0, self.n_files*file_duration, self.n_files)
+        file_duration = 1/6 # 10 minutes : 1 file duration in hours
+        time = np.linspace(0, self.n_files*file_duration, len(self.detected_freqs[0][0]))
 
         # Create the plots
         visualizer = Visualizer(time, output_dir="PART_I/results")
