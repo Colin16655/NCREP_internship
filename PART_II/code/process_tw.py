@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn_extra.cluster import KMedoids
 from utils import save_figure
 
-class ProcessBatch:
+class ProcessTW:
     def __init__(self, batch, S, p):
         self.batch = batch
         self.fft_batch = None

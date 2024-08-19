@@ -3,12 +3,12 @@ import pandas as pd
 from scipy.stats import t
 import matplotlib.pyplot as plt
 from data_loader import DataLoader
-from process_batch import ProcessBatch
+from process_tw import ProcessTW
 from tqdm import tqdm
 from utils import save_figure
 
 class ProcessFolder:
-    def __init__(self, S, L, selected_indices, folder_path, batch_size, scaling_factors, location):
+    def __init__(self, S, L, selected_indices, folder_path, scaling_factors, location):
         """
         Initialize with the folder path containing time series data and the desired window size.
 
@@ -16,12 +16,11 @@ class ProcessFolder:
             folder_path (str): Path to the folder containing time series data.
             window_size (int): The number of SDOs per time window.
         """
-        self.loader = DataLoader(selected_indices, folder_path=folder_path, batch_size=batch_size, scaling_factors=scaling_factors)
+        self.loader = DataLoader(selected_indices, folder_path=folder_path, batch_size=L, scaling_factors=scaling_factors)
         self.S = S
-        self.L = L
-        self.p = len(self.loader[0][1][0]) # Number of sensors
+        self.p = len(selected_indices) # Number of sensors
         self.folder_path = folder_path
-        self.batch_size = batch_size
+        self.L = L
         self.NI_values = np.full(len(self.loader), np.nan)
         self.CB_values = np.full(len(self.loader), np.nan)
         self.DI_values = np.full(len(self.loader), np.nan)
@@ -34,9 +33,9 @@ class ProcessFolder:
         """
         Process each batch, compute NI, CB, and DI, and store results.
         """
-        analysis = ProcessBatch(batch=None, S=self.S, p=self.p)
+        analysis = ProcessTW(batch=None, S=self.S, p=self.p)
 
-        for idx, (time, batch) in enumerate(tqdm(self.loader, desc="Processing Batches", unit="batch")):
+        for idx, batch in enumerate(tqdm(self.loader, desc="Processing Batches", unit="batch")):
             analysis.batch = batch
             analysis.compute_Q()
             if idx >= self.S-1:

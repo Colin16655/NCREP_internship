@@ -1,135 +1,111 @@
-import numpy as np
 import os
-import re
-from datetime import datetime
+import numpy as np
 
 class DataLoader:
-    """
-    A class to load and preprocess data from multiple CSV files in mini-batches.
+    def __init__(self, selected_indices, folder_path=None, batch_size=100, scaling_factors=None):
+        if folder_path is None:
+            raise ValueError("folder_path must be provided.")
 
-    This class handles loading data from multiple CSV files, concatenating the data, 
-    and preprocessing it to separate time values from sensor data. It supports iterating 
-    over the files in mini-batches and accessing specific batches via indexing. The class 
-    also includes preprocessing methods for scaling and detrending sensor data.
-
-    Attributes:
-        file_paths (list of str or None): A list of file paths pointing to the CSV files to load.
-        folder_path (str or None): The path to a folder containing CSV files to load.
-        time (numpy.ndarray or None): An array containing time values extracted from the data.
-        data (numpy.ndarray or None): An array containing sensor data with time values removed.
-        initialized (bool): A flag indicating whether the data has been successfully loaded and processed.
-        batch_size (int): The size of each mini-batch of files.
-        scaling_factors (numpy.ndarray or None): The factors used to scale the sensor data.
-        total_batches (int): The total number of batches available based on file paths and batch size.
-        time_offset (int): The offset to adjust time values when multiple files are concatenated.
-    """
-
-    def __init__(self, selected_indices, file_paths=None, folder_path=None, batch_size=1, scaling_factors=None):
-        """
-        Initializes the DataLoader with a list of file paths or a folder path.
-
-        You can initialize the DataLoader in one of two ways:
-        1. **Direct File Paths:** Provide a list of CSV file paths via the `file_paths` argument.
-        2. **Folder Path:** Provide a folder path via the `folder_path` argument. The `get_files_list` method 
-           will be automatically called to generate the list of file paths from all files in the folder.
-
-        Args:
-            selected_indices (list of int): Indices of the columns to be selected from the sensor data.
-            file_paths (list of str, optional): Paths to the CSV files to load.
-            folder_path (str, optional): The path to a folder containing CSV files to load.
-            batch_size (int, optional): The number of files to include in each mini-batch.
-            scaling_factors (numpy.ndarray, optional): The factors used to scale the sensor data.
-        """
-        self.selected_indices = selected_indices
-        self.file_paths = file_paths
-        self.folder_path = folder_path
-        self.time = None
-        self.data = None
-        self.initialized = False
+        self.file_paths = self.get_files_list(folder_path)
         self.batch_size = batch_size
+        self.scaling_factors = None
+        self.current_csv = None  # Array to hold data from 2 contiguous CSV files
+        self.current_csv_idx = 0  # Index for the current position in current_csv
+        self.file_paths_idx = 0  # Index for the next file to be loaded
+        self.csv_size = 60000  # Default size for one CSV file's data
+
+        self.selected_indices = selected_indices
         self.scaling_factors = scaling_factors
-        self.total_batches = 0
-        self.time_offset = 0
 
-        # Automatically call get_files_list if a folder path is provided
-        if self.folder_path and not self.file_paths:
-            self.file_paths = self.get_files_list()
+    def _load_data(self, file_paths):
+        try:
+            data = [np.loadtxt(file_path, delimiter=';') for file_path in file_paths]
+            data = np.concatenate(data, axis=0) if len(file_paths) > 1 else data[0]
+            data = np.array(data[:, 1:])[:, self.selected_indices]  # Exclude the time column
 
-        # Calculate the total number of batches
-        if self.file_paths:
-            self.total_batches = len(self.file_paths) // self.batch_size # incomplete batches are ignored
+            if self.scaling_factors is not None:
+                data = self._detrend_and_scale(data)
+
+            return data
+        except Exception as e:
+            raise ValueError(f"Error loading data from files {file_paths}: {e}")
+
+    def __len__(self):
+        total_lines = self.csv_size * len(self.file_paths)
+        return total_lines // self.batch_size  # Incomplete batches are ignored
+
+    def _load_next_file(self):
+        if self.current_csv is None:
+            # Initialize current_csv with the first file's data
+            file_path = self.file_paths[self.file_paths_idx]
+            data = self._load_data([file_path])
+            self.current_csv = np.full((2 * self.csv_size, data.shape[1]), np.nan)
+            self.current_csv[:len(data)] = data
+            self.current_csv_idx = 0
+            self.file_paths_idx += 1
+        else:
+            # Load the next file and update the current_csv
+            if self.file_paths_idx < len(self.file_paths):
+                file_path = self.file_paths[self.file_paths_idx]
+                next_data = self._load_data([file_path])
+
+                # Shift the existing data and append the new data
+                if not np.isnan(self.current_csv[-1][0]) : self.current_csv[:self.csv_size] = self.current_csv[-self.csv_size:]
+                self.current_csv[self.csv_size:] = next_data
+                self.file_paths_idx += 1
+            else:
+                raise StopIteration
 
     def __iter__(self):
         """
-        Returns the iterator object itself, initializing the current batch index and time offset.
+        Returns the iterator object itself, initializing the current batch index.
         """
-        self.current_batch_index = 0  # Reset the index for new iterations
-        self.time_offset = 0  # Reset the time offset for new iterations
+        self.current_csv = None  # Reset current_csv to reload files
+        self.file_paths_idx = 0  # Reset to start from the first file
+        self.current_csv_idx = 0  # Reset the current position in current_csv
+
+        # Preload the first two files
+        self._load_next_file()
+        self._load_next_file()
+
         return self
 
     def __next__(self):
-        """
-        Returns the next mini-batch of data.
+        # Check if we need to load more data
+        if self.current_csv_idx + self.batch_size > 2 * self.csv_size:
+            self._load_next_file()
+            self.current_csv_idx -= self.csv_size
 
-        Raises:
-            StopIteration: When there are no more batches to return.
-        """
-        if self.current_batch_index >= len(self.file_paths) - self.batch_size + 1:
+        # Prepare the batch
+        batch_data = self.current_csv[self.current_csv_idx:self.current_csv_idx + self.batch_size]
+
+        # Update the current index
+        self.current_csv_idx += self.batch_size
+
+        # Ignore incomplete batches
+        if batch_data.shape[0] < self.batch_size:
             raise StopIteration
 
-        time, data = self._load_batch(self.current_batch_index)
-        self.current_batch_index += self.batch_size
-        self.time_offset = time[-1] + np.mean(np.diff(time))  # Update the time offset
-        return time, data
+        return batch_data
 
-    def __getitem__(self, index):
+    @staticmethod
+    def get_files_list(folder_path):
         """
-        Returns a specific mini-batch of data based on the index.
-
-        Args:
-            index (int): The index of the batch to retrieve.
+        Retrieves a list of all files in the specified folder, sorted in alphabetical order based on filenames.
 
         Returns:
-            tuple: A tuple containing time values and sensor data.
+            list of str: A list of file paths in the specified folder.
 
         Raises:
-            IndexError: If the index is out of range.
+            FileNotFoundError: If the folder does not exist.
         """
-        if index * self.batch_size >= len(self.file_paths):
-            raise IndexError("Index out of range")
+        if not os.path.exists(folder_path):
+            raise FileNotFoundError(f"The folder {folder_path} does not exist.")
 
-        return self._load_batch(index * self.batch_size)
-
-    def __len__(self):
-        """
-        Returns the total number of batches available.
-        """
-        return self.total_batches
-
-    def _load_batch(self, start_index):
-        """
-        Helper function to load a batch of data starting from the given index.
-
-        Args:
-            start_index (int): The starting index of the batch to load.
-
-        Returns:
-            tuple: A tuple containing time values and sensor data.
-        """
-        batch_file_paths = self.file_paths[start_index:start_index + self.batch_size]
-        datas = [np.loadtxt(file_path, delimiter=';') for file_path in batch_file_paths]
-        data = np.concatenate(datas, axis=0)
-
-        if len(batch_file_paths) == 1:
-            time = np.array(data[:, 0])
-        else:
-            time = np.linspace(self.time_offset, self.time_offset + 600 * len(batch_file_paths), len(data))
-        data = np.array((data[:, 1:])[:, self.selected_indices])
-
-        if self.scaling_factors is not None:
-            data = self._detrend_and_scale(data)
-
-        return time, data
+        files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
+        files.sort()
+        file_paths = [os.path.join(folder_path, file_name) for file_name in files]
+        return file_paths
 
     def _detrend_and_scale(self, data):
         """
@@ -141,71 +117,27 @@ class DataLoader:
         Returns:
             numpy.ndarray: The detrended and scaled sensor data.
         """
-        # Detrend data
         detrended_data = data - np.mean(data, axis=0)
-        # Scale data
-        scaled_data = detrended_data * self.scaling_factors
+        if self.scaling_factors is not None:
+            scaled_data = detrended_data * self.scaling_factors
+        else:
+            scaled_data = detrended_data
         return scaled_data
-
+    
     def load_data(self):
         """
         Loads all data from the specified CSV files, concatenates them, and preprocesses the data.
         """
         datas = [np.loadtxt(file_path, delimiter=';') for file_path in self.file_paths]
-        self.data = np.concatenate(datas, axis=0)
+        data = np.concatenate(datas, axis=0)
 
         if len(self.file_paths) == 1:
-            self.time = np.array(self.data[:, 0])
-            self.data = np.array(self.data[:, 1:])[:, self.selected_indices]
+            time = np.array(data[:, 0])
+            data = np.array(data[:, 1:])[:, self.selected_indices]
         else:
-            self.time = np.linspace(0, 600 * len(self.file_paths), len(self.data))
-            self.data = np.array(self.data[:, 1:])[:, self.selected_indices]
+            time = np.linspace(0, 600 * len(self.file_paths), len(data))
+            data = np.array(data[:, 1:])[:, self.selected_indices]
         if self.scaling_factors is not None:
             # Detrend and scale the data
-            self.data = self._detrend_and_scale(self.data)
-        self.initialized = True
-        return self.time, self.data
-
-    def get_files_list(self):
-        """
-        Retrieves a list of all files in the specified folder, sorted in alphabetical order based on filenames.
-
-        Returns:
-            list of str: A list of file paths in the specified folder.
-
-        Raises:
-            FileNotFoundError: If the folder does not exist.
-        """
-        if not os.path.exists(self.folder_path):
-            raise FileNotFoundError(f"The folder {self.folder_path} does not exist.")
-
-        # List all files in the folder
-        files = [f for f in os.listdir(self.folder_path) if os.path.isfile(os.path.join(self.folder_path, f))]
-        files.sort()
-        file_paths = [os.path.join(self.folder_path, file_name) for file_name in files]
-        return file_paths
-
-# Function to extract date and time from the filename
-def extract_date_time(filename, date_time_pattern=r"\d{4}_\d{2}_\d{2}_\d{6}"): 
-    """
-    Extracts the date and time from the filename based on a specified pattern.
-
-    Args:
-        filename (str): The filename from which to extract the date and time.
-        date_time_pattern (str, optional): A regular expression pattern to match the date and time in the filename.
-            Defaults to a pattern matching the format YYYY_MM_DD_HHMMSS.
-
-    Returns:
-        datetime.datetime or None: The extracted date and time as a datetime object, or None if no match is found.
-    """
-    # Search for the date and time pattern in the filename
-    match = re.search(date_time_pattern, filename)
-    
-    if match:
-        # Extract the matched date and time string
-        date_time_str = match.group(0)
-        # Convert the string to a datetime object
-        return datetime.strptime(date_time_str, "%Y_%m_%d_%H%M%S")
-    else:
-        # Return None if no match is found
-        return None
+            data = self._detrend_and_scale(data)
+        return time, data
