@@ -48,12 +48,22 @@ class DataLoader:
             if self.file_paths_idx < len(self.file_paths):
                 file_path = self.file_paths[self.file_paths_idx]
                 next_data = self._load_data([file_path])
+                self.file_paths_idx += 1
 
                 # Shift the existing data and append the new data
-                if not np.isnan(self.current_csv[-1][0]) : self.current_csv[:self.csv_size] = self.current_csv[-self.csv_size:]
-                self.current_csv[self.csv_size:] = next_data
-                self.file_paths_idx += 1
+
+                # Check if the second file in current_csv has been loaded completely (case if L = 66000, 11')
+                if self.current_csv_idx >= self.csv_size*2:
+                    self.current_csv[:self.csv_size] = next_data
+                    next_next_data = self._load_data([self.file_paths[self.file_paths_idx]])
+                    self.current_csv[self.csv_size:] = next_next_data
+                    self.current_csv_idx -= self.csv_size
+                    self.file_paths_idx += 1
+                else:
+                    if not np.isnan(self.current_csv[-1][0]) : self.current_csv[:self.csv_size] = self.current_csv[-self.csv_size:]
+                    self.current_csv[self.csv_size:] = next_data
             else:
+                # if self.current_csv_idx + self.batch_size > 2 * self.csv_size:
                 raise StopIteration
 
     def __iter__(self):
@@ -72,16 +82,14 @@ class DataLoader:
 
     def __next__(self):
         # Check if we need to load more data
-        if self.current_csv_idx + self.batch_size > 2 * self.csv_size:
+        if self.current_csv_idx + self.batch_size > 2 * self.csv_size - 1:
             self._load_next_file()
             self.current_csv_idx -= self.csv_size
-
         # Prepare the batch
         batch_data = self.current_csv[self.current_csv_idx:self.current_csv_idx + self.batch_size]
 
         # Update the current index
         self.current_csv_idx += self.batch_size
-
         # Ignore incomplete batches
         if batch_data.shape[0] < self.batch_size:
             raise StopIteration

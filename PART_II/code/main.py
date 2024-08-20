@@ -30,11 +30,10 @@ fig, ax = plt.subplots(len(Ls), 1, figsize=(10, 1.2*len(Ls)), sharex=True)
 labels = [0.01*L for L in Ls]
 
 scaling_factors = np.array([0.4035*1000, 0.4023*1000, 0.4023*1000, 0.4023*1000, 0.4015*1000, 0.4014*1000, 0.4007*1000, 0.4016*1000])[selected_indices]
-for i, L in enumerate([60000, 6000*11]):
+for i, L in enumerate(Ls):
     folder_processor = ProcessFolder(S, L, selected_indices, folder_path, scaling_factors, location)
 
     DI_values = folder_processor.DI_values
-    print(len(DI_values))
     time = np.linspace(0, 600*len(folder_processor.loader.file_paths), len(folder_processor.loader))
     # Separate the indices and values for positive and negative DI values
     indices = np.arange(len(DI_values))
@@ -55,7 +54,7 @@ for i, L in enumerate([60000, 6000*11]):
         
     ax[i].set_title(f'L = {labels[i]} [s]')
 
-ax[-1].set_xlabel('Time [s]]')
+ax[-1].set_xlabel('Time [s]')
 fig.tight_layout()
 save_figure(fig, f"NI_CB_DI", f"loc_{location}_S{S}_L_vary_p_{len(selected_indices)}", format='pdf')
 
