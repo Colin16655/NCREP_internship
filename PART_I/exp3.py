@@ -1,5 +1,5 @@
 import numpy as np
-from helper.data_loader import DataLoader
+from helper.data_loader1 import DataLoader
 from helper.processor import ModalFrequencyAnalyzer
 from helper.visualizer import Visualizer
 from helper.folder_processor import FolderProcessor

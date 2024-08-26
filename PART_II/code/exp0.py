@@ -56,5 +56,5 @@ for i, L in enumerate(Ls):
 
 ax[-1].set_xlabel('Time [s]')
 fig.tight_layout()
-save_figure(fig, f"NI_CB_DI", f"loc_{location}_S{S}_L_vary_p_{len(selected_indices)}", format='pdf')
+save_figure(fig, f"NI_CB_DI", f"exp0_loc_{location}_S{S}_L_vary_p_{len(selected_indices)}", format='pdf')
 

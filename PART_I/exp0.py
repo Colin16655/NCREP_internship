@@ -1,7 +1,7 @@
 # Just ploting the time series (not really interesting)
 
 import numpy as np
-from helper.data_loader import DataLoader
+from helper.data_loader1 import DataLoader
 from helper.visualizer import Visualizer
 
 
@@ -36,7 +36,7 @@ print("Data shape:", data.shape)
 # Initialize the Visualizer with time and frequencies
 # Create a unique folder name based on hyperparameters
 time_window_size = 600 * len(loader.file_paths[0])
-folder_name = f"loc_{location}_wind_{time_window_size}"
+folder_name = f"exp0_loc_{location}_wind_{time_window_size}"
 
 visualizer = Visualizer(time, output_dir="PART_I/results")
 labels=["Base X", "Base Y", "Base Z", "Stair 1 X", "Stair 1 Y", "Stair 1 Z", "Stair 2 Z", "Vitral Z"]

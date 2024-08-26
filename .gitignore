@@ -3,6 +3,9 @@
 *.xlsx
 *.csv
 *.zip
+*.txt
+2024_LIDL_SJM_chamine/
+data/
 literature/
 __pycache__/
 OLD/

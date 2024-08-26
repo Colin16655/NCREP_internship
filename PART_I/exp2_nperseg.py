@@ -1,5 +1,5 @@
 import numpy as np
-from helper.data_loader import DataLoader
+from helper.data_loader1 import DataLoader
 from helper.processor import ModalFrequencyAnalyzer, PeakPicker
 from helper.visualizer import Visualizer
 from scipy.ndimage import gaussian_filter1d
@@ -61,9 +61,9 @@ print("Data shape:", data.shape)
 # Create a unique folder name based on hyperparameters
 time_window_size = 600 * len(file_paths)
 processing_method = "Welch"
-folder_name = f"loc_{location}_wind_{time_window_size}_meth_{processing_method}_vary"
+folder_name = f"exp2_nperseg_loc_{location}_wind_{time_window_size}_meth_{processing_method}_vary"
 
-visualizer = Visualizer(time, output_dir="results")
+visualizer = Visualizer(time, output_dir="PART_I/results")
 labels = np.array(["Base X", "Base Y", "Base Z", "Stair 1 X", "Stair 1 Y", "Stair 1 Z", "Stair 2 Z", "Vitral Z"])[selected_indices]
 
 analyzer = ModalFrequencyAnalyzer(data, time)

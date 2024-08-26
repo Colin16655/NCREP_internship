@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import t
 import matplotlib.pyplot as plt
-from data_loader import DataLoader
+from data_loader2 import DataLoader
 from process_tw import ProcessTW
 from tqdm import tqdm
 from utils import save_figure
@@ -19,7 +19,6 @@ class ProcessFolder:
         self.loader = DataLoader(selected_indices, folder_path=folder_path, batch_size=L, scaling_factors=scaling_factors)
         self.S = S
         self.p = len(selected_indices) # Number of sensors
-        self.folder_path = folder_path
         self.L = L
         self.NI_values = np.full(len(self.loader), np.nan)
         self.CB_values = np.full(len(self.loader), np.nan)
@@ -29,7 +28,7 @@ class ProcessFolder:
 
         self.process()
 
-    def process(self):
+    def process(self, k=3):
         """
         Process each batch, compute NI, CB, and DI, and store results.
         """
@@ -41,7 +40,7 @@ class ProcessFolder:
             if idx >= self.S-1:
                 analysis.compute_D()
                 # if idx % 100 == 0: analysis.plot_D(self.folder_name, idx)
-                analysis.apply_k_medoids(k=3)
+                analysis.apply_k_medoids(k)
                 NI = analysis.compute_NI()
                 self.NI_values[idx] = NI
             if idx >= self.S:
@@ -76,21 +75,19 @@ class ProcessFolder:
         t_value = t.ppf(.99, degrees_of_freedom)  # 95% confidence interval
         return mean + t_value * std
 
-    def plot(self):
+    def plot(self, filename=f"NI_CB_DI", T=600):
         """
         Plot the evolution of the NI, CB, NI+CB, DI indices over time.
         """
+        if T==600 : T = T*len(self.NI_values) # for exp0
         fig, ax = plt.subplots(4, 1, figsize=(10, 10))
         # Share the x-axis among axes 1 to 4
         for i in range(1, 4):
             ax[i].sharex(ax[1])
 
-        colors = ['r', 'g', 'b', 'k']
-        labels = ["1X", "1Y", "1Z", "2Z"]
-        data = self.loader.load_data()[1]
         # for i in range(self.p):
             # ax[0].plot(data[:, i], color=colors[i], label=labels[i])
-        time = np.linspace(0, 600*len(self.loader.file_paths), len(self.loader))
+        time = np.linspace(0, T, len(self.NI_values))
         ax[0].plot(time, self.NI_values, color='k')
         ax[1].plot(time, self.CB_values, color='b', linestyle='-.')
         ax[2].plot(time, self.NI_values, color='k', label=('NI'))
@@ -125,4 +122,4 @@ class ProcessFolder:
 
         ax[-1].set_xlabel('Time Window')
         fig.tight_layout()
-        save_figure(fig, f"NI_CB_DI", self.folder_name, format='pdf')
+        save_figure(fig, filename, self.folder_name, format='pdf')

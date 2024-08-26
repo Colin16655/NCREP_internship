@@ -1,7 +1,7 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from helper.data_loader import DataLoader
+from helper.data_loader1 import DataLoader
 from helper.processor import ModalFrequencyAnalyzer, PeakPicker
 from helper.visualizer import Visualizer
 from tqdm import tqdm

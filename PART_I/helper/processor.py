@@ -9,7 +9,7 @@ class ModalFrequencyAnalyzer:
     A class for performing modal frequency analysis, including SVD on both PSD and coherence matrices.
     """
 
-    def __init__(self, data=None, time=None):
+    def __init__(self, data=None, time=None,dt=None):
         """
         Initializes the ModalFrequencyAnalyzer with data and time vector.
 
@@ -19,6 +19,9 @@ class ModalFrequencyAnalyzer:
         """
         self.data = data
         self.time = time
+        if time is not None : self.sampling_dt = np.mean(np.diff(self.time))
+        elif dt is not None : self.sampling_dt = dt
+        # else : print("No time array or sampling dt provided")
         self.fft_data = None
         self.psd_matrix = None
         self.coherence_matrix = None
@@ -42,7 +45,8 @@ class ModalFrequencyAnalyzer:
             tuple: Frequencies and the FFT of the data.
         """
         n_samples = self.data.shape[0]
-        sampling_dt = np.mean(np.diff(self.time))
+        if self.time is not None : self.sampling_dt = np.mean(np.diff(self.time))
+        sampling_dt = self.sampling_dt
         self.freq_fft = np.fft.rfftfreq(n_samples, d=sampling_dt)
         self.fft_data = np.fft.rfft(self.data, axis=0)
         return self.freq_fft, self.fft_data
@@ -58,7 +62,8 @@ class ModalFrequencyAnalyzer:
         Returns:
             tuple: Frequencies and the PSD matrix for the selected sensors.
         """
-        fs = 1 / np.mean(np.diff(self.time))
+        if self.time is not None : self.sampling_dt = np.mean(np.diff(self.time))
+        fs = 1 / self.sampling_dt
         n_sensors = len(self.data[0])
         self.psd_matrix = np.zeros((nperseg // 2 + 1, n_sensors, n_sensors), dtype=complex)
     
