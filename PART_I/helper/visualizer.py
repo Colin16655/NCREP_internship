@@ -80,7 +80,7 @@ class Visualizer:
         self._save_figure(fig, filename, folder_name)
         if show: fig.show()
 
-    def plot_fft(self, frequencies, fft_data, folder_name="", labels=None, show=False):
+    def plot_fft(self, frequencies, fft_data, folder_name="", labels=None, show=False, band=(8,24)):
         """
         Plots the FFT results and saves the figures.
 
@@ -126,18 +126,19 @@ class Visualizer:
         fig, ax = plt.subplots(n_sensors, 1, figsize=(3.33, 2.5*n_sensors))
         for i in range(n_sensors):
             if labels is not None:
-                ax[i].plot(frequencies, np.abs(fft_data[:, i]), label=labels[i])
+                ax[i].semilogy(frequencies, np.abs(fft_data[:, i]), label=labels[i])
                 ax[i].legend()
-            else : ax[i].plot(frequencies, np.abs(fft_data[:, i]))
+            else : ax[i].semilogy(frequencies, np.abs(fft_data[:, i]))
             ax[i].set_ylabel("FFT - Amplitude")
-            ax[i].set_xlim(8, 24)
+            ax[i].set_xlim(band[0], band[1])
+            ax[i].set_ylim(1e-3, 13)
         ax[-1].set_xlabel("Frequency [Hz]")
         fig.tight_layout()
 
         self._save_figure(fig, "FFT_results", folder_name)
         if show: fig.show()
 
-    def plot_psd(self, frequencies, psd_matrix, folder_name="", labels=None, show=False, linear=True):
+    def plot_psd(self, frequencies, psd_matrix, folder_name="", labels=None, show=False, linear=True, band=(8,24)):
         """
         Plots the Power Spectral Density (PSD) and saves the figures.
 
@@ -173,10 +174,10 @@ class Visualizer:
                     ax[1].plot(frequencies, np.real(psd_matrix[:, i, i]))
         if linear :
             ax[1].set_ylabel("PSD")
-            ax[1].set_xlim(8, 24)
+            ax[1].set_xlim(band[0], band[1])
         ax[-1].set_xlabel("Frequency [Hz]")
         ax[0].set_ylabel("PSD")
-        ax[0].set_xlim(8, 24)
+        ax[0].set_xlim(band[0], band[1])
         fig.tight_layout()
         self._save_figure(fig, "PSD_results", folder_name)
         if show: fig.show()
@@ -286,7 +287,6 @@ class Visualizer:
         # Set y-limits based on min and max values within the frequency range
         ax0.set_ylim(min_val, max_val)
         ax0.set_ylabel("Singular Value")
-        # ax0.set_xlim(freq_min, freq_max)
         if plot_li:
             ax[1].set_ylim(min_val, max_val)
             ax[1].set_xlabel("Frequency [Hz]")
@@ -294,9 +294,10 @@ class Visualizer:
             ax[1].set_xlim(freq_min, freq_max)
             ax[1].legend(framealpha=0.5)
         else:
+            ax0.set_xlim(freq_min, freq_max)
             ax0.set_xlabel("Frequency [Hz]")
 
-        if plot_smooth: ax0.legend(framealpha=0.5)
+        ax0.legend(framealpha=0.5)
         fig.tight_layout()
         self._save_figure(fig, filename, folder_name)
         if show: fig.show()

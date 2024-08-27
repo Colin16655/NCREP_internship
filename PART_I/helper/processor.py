@@ -3,6 +3,8 @@ from scipy import signal
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
 import PyOMA as oma
+from visualizer import Visualizer
+import os
 
 class ModalFrequencyAnalyzer:
     """
@@ -37,7 +39,7 @@ class ModalFrequencyAnalyzer:
         self.P2 = None
         self.P3 = None
 
-    def compute_fft(self):
+    def compute_fft(self, output_dir, filename=None, band=None):
         """
         Computes the FFT of the data.
 
@@ -48,7 +50,27 @@ class ModalFrequencyAnalyzer:
         if self.time is not None : self.sampling_dt = np.mean(np.diff(self.time))
         sampling_dt = self.sampling_dt
         self.freq_fft = np.fft.rfftfreq(n_samples, d=sampling_dt)
-        self.fft_data = np.fft.rfft(self.data, axis=0)
+        self.fft_data = np.fft.rfft(self.data, axis=0)    
+        # Apply the frequency band filter if a band is provided
+        if band is not None:
+            min_freq, max_freq = band
+            band_mask = (self.freq_fft >= min_freq) & (self.freq_fft <= max_freq)
+            
+            # Select only the frequencies and FFT values within the specified band
+            freq_filtered = self.freq_fft[band_mask]
+            fft_filtered = self.fft_data[band_mask]
+        else:
+            # No band provided, use the full frequency range
+            freq_filtered = self.freq_fft
+            fft_filtered = self.fft_data
+    
+        # Save the data if filename is provided
+        if filename is not None:
+            # Stack the frequencies and FFT values side by side for saving
+            data_to_save = np.column_stack((freq_filtered, np.abs(fft_filtered)))
+            os.makedirs(output_dir, exist_ok=True)
+            np.savetxt(os.path.join(output_dir, filename+'.txt'), data_to_save, fmt='%.6e', header='Frequency [Hz],FFT_Amplitude (x),FFT_Amplitude (y)')
+    
         return self.freq_fft, self.fft_data
 
     def compute_psd_matrix(self, nperseg=1024):
@@ -385,7 +407,7 @@ class PeakPicker:
                 
         return np.unique(np.array(selected_peaks))
 
-    def identify_peaks_2(self, S, U, band=(8, 24), distance=2, mac_threshold=0.9, n_modes=4, n_mem=4, results_prev=None, p=None, dt=None):
+    def identify_peaks_2(self, S, U, band=(8, 24), distance=2, mac_threshold=0.9, n_modes=4, n_mem=4, results_prev=None, p=None, dt=None, output_dir='trash', folder_name=''):
         """
         Detects peaks within a specified frequency band by dividing the given frequency domain into similar mode ranges using
         the MAC (Modal Assurance Criterion) matrix. The function then selects the argmax within the ranges that best match 
@@ -497,11 +519,11 @@ class PeakPicker:
             self.idx_method2 += 1
 
         # Uncomment the following line to enable plotting for debugging.
-        if p == 0 or p == 20: self.plot_debug(band, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt)
+        if p == 0 or p == 20: self.plot_debug(band, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt, output_dir=output_dir, folder_name=folder_name)
 
         return selected_peaks, results
 
-    def plot_debug(self, band, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt):
+    def plot_debug(self, band, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt, output_dir='trash', folder_name=""):
         """
         Plots the signal with detected ranges and the modified MAC matrix for debugging purposes.
 
@@ -533,9 +555,9 @@ class PeakPicker:
         ax0.semilogy(freqs, S, color='black', linestyle='--', alpha=0.3)
         # ax0.scatter(freqs[raw_peaks], S[raw_peaks], color='red', label='Peaks')
         ax0.set_xlim([band[0], band[1]])
-        ax0.set_xlabel('f [Hz]')
+        ax0.set_xlabel('Frequency [Hz]')
         ax0.set_ylabel('Singular Value')
-        ax0.legend(framealpha=0.1, loc="lower right")
+        ax0.legend(framealpha=0.1)
         
         # Set the step size for selecting frequreqs, Sency labels (e.g., plot every 5th frequency)
         step_size = 15
@@ -557,15 +579,15 @@ class PeakPicker:
         ax1.set_yticks(selected_indices)
         ax1.set_yticklabels(freq_labels)
 
-        ax1.set_xlabel('f [Hz]')
-        ax1.set_ylabel('f [Hz]')
+        ax1.set_xlabel('Frequency [Hz]')
+        ax1.set_ylabel('Frequency [Hz]')
         fig0.suptitle("Time = " + str(time) + "h", fontsize=16)
         fig0.tight_layout()
-        fig0.savefig('PSD' + str(p) + '.pdf', format='pdf')
         fig1.suptitle("Time = " + str(time) + "h", fontsize=16)
         fig1.tight_layout()
-        fig1.savefig('MAC_Matrix' + str(p) + '.png', format='png')
-
+        vis = Visualizer(None, output_dir=output_dir)
+        vis._save_figure(fig1, 'MAC_Matrix' + str(p), folder_name, format='pdf')
+        vis._save_figure(fig0, 'PSD' + str(p), folder_name, format='pdf')
 
     def identify_peaks_pyoma(self):
         data = self.analyzer.data
