@@ -216,7 +216,7 @@ class Visualizer:
         if show:
             plt.show()
 
-    def plot_sigmas(self, frequencies, S_PSD, peaks, folder_name="", sigma=8, filename='PSD_SVD_results', plot_li=False, plot_smooth=True, show=False, band=(8,24)):
+    def plot_sigmas(self, frequencies, S_PSD, peaks, folder_name="", sigma=8, filename='PSD_SVD_results', plot_li=False, plot_smooth=True, show=False, band=(8,24), legend=True):
         """
         Plots the singular values of the PSD matrix as a function of frequency and saves the figure.
 
@@ -297,7 +297,7 @@ class Visualizer:
             ax0.set_xlim(freq_min, freq_max)
             ax0.set_xlabel("Frequency [Hz]")
 
-        ax0.legend(framealpha=0.5)
+        if legend: ax0.legend(framealpha=0.5)
         fig.tight_layout()
         self._save_figure(fig, filename, folder_name)
         if show: fig.show()

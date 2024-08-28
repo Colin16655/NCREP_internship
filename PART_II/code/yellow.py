@@ -35,13 +35,16 @@ class Yellow:
         paths = self.paths
         _, dasy, _, _ = self._load_mat_file(paths[0])
 
-        self.ref_data = np.array([dasy[name][0][0].flatten()[:45568] for name in self.names])
+        self.ref_data = np.array([dasy[name][0][0].flatten()[:45568] for name in self.names]) # !!! USER
+        self.ref_data -= np.mean(self.ref_data, axis=1, keepdims=True)
+        
         self.dam_data = np.zeros((len(paths) - 1, len(self.names), len(self.ref_data[0])))
 
         for i, path in enumerate(paths[1:]):
             dasy_descr, dasy, filedescription, fsdasy = self._load_mat_file(path)
             for j, name in enumerate(self.names):
-                self.dam_data[i, j, :] = dasy[name][0][0].flatten()[:45568]            
+                self.dam_data[i, j, :] = dasy[name][0][0].flatten()[:45568]     
+                self.dam_data[i, j, :] -= np.mean(self.dam_data[i, j, :])
         # Extract the sampling frequency
         self.fs = fsdasy[0][0]  # Extracting the actual value from the array
     
@@ -53,14 +56,14 @@ class Yellow:
             
         labels = ["dam 1", "dam 2", "dam 3", "dam 4", "dam 5", "dam 6", "dam 7", "dam 8"]
 
-        fig0, ax0 = plt.subplots(len(labels), 1, figsize=(4, len(labels) * 1.3), sharex=True)
-        fig1, ax1 = plt.subplots(1, 1, figsize=(4, 1.3))
+        fig0, ax0 = plt.subplots(2, len(labels)//2, figsize=(4*len(labels)//2, 2 * 2), sharex=True)
+        fig1, ax1 = plt.subplots(1, 1, figsize=(4, 2))
 
         for i, label in enumerate(labels):
-            ax0[i].plot(time_dam, self.dam_data[i][0], label=label)
-            ax0[i].legend()
-            ax0[i].set_ylabel('Acc [g]')
-            ax0[i].set_xlim([time_dam[0], time_dam[-1]])
+            ax0[i//4, i%4].plot(time_dam, self.dam_data[i][0], label=label)
+            ax0[i//4, i%4].legend()
+            ax0[i//4, i%4].set_ylabel('Acc [g]')
+            ax0[i//4, i%4].set_xlim([time_dam[0], time_dam[-1]])
 
         ax1.plot(time_ref, self.ref_data[0], label='ref')
         ax1.legend()
@@ -68,14 +71,14 @@ class Yellow:
         ax1.set_xlabel('Time [s]')
         ax1.set_xlim([time_ref[0], time_ref[-1]])
 
-        ax0[-1].set_xlabel('Time [s]')
+        for i in range(4) : ax0[1, i].set_xlabel('Time [s]')
         fig0.tight_layout()
         save_figure(fig0, f"acc_dam", folder_name, format='pdf')
         save_figure(fig1, f"acc_ref", folder_name, format='pdf')
 
-    def apply_stat_analysis(self, Ls):
+    def apply_stat_analysis(self, Ls, dam=0):
         # Merge ref with dam data
-        self.merged_data = np.concatenate((self.ref_data.T, self.dam_data[0].T), axis=0) # USER
+        self.merged_data = np.concatenate((self.ref_data.T, self.dam_data[dam].T), axis=0) # USER
         i0 = len(self.ref_data[0]) - 1
         i1 = len(self.merged_data) // 6
         i2 = 2 * i1
@@ -83,7 +86,7 @@ class Yellow:
         self.merged_data[:i1] = self.merged_data[i1:i2]
         self.merged_data[i1:i2] = temp
         # Process merged array
-        fig, ax = plt.subplots(len(Ls), 1, figsize=(10, 1.2*len(Ls)), sharex=True)
+        fig, ax = plt.subplots(len(Ls), 1, figsize=(5, 1*len(Ls)), sharex=True)
         labels = [1/200 * L for L in Ls]
 
         DI_ALL_valuses = []
@@ -110,12 +113,17 @@ class Yellow:
             positive_time = time[positive_indices]
             negative_time = time[negative_indices]
 
-            if len(positive_time)   > 0 : ax[i].stem(positive_time, positive_values, linefmt='r-', markerfmt='ro', basefmt=" ")
-            if len(negative_values) > 0 : ax[i].stem(negative_time, negative_values, linefmt='g-', markerfmt='go', basefmt=" ")
-
-            ax[i].vlines(processor.I[1] * (int(len(self.merged_data) / self.fs / len(DI_values))+1), ymin=np.min(negative_values), ymax=np.max(positive_values), color='grey', linestyle='--')
-            ax[i].vlines(processor.I[2] * (int(len(self.merged_data) / self.fs / len(DI_values))+1), ymin=np.min(negative_values), ymax=np.max(positive_values), color='grey', linestyle='--')
-            ax[i].vlines(processor.I[0] * (int(len(self.merged_data) / self.fs / len(DI_values))+1), ymin=np.min(negative_values), ymax=np.max(positive_values), color='red', linestyle='--', label='damage')
+            if len(positive_time)   > 0 : 
+                max = np.max(positive_values)
+                ax[i].stem(positive_time, positive_values, linefmt='r-', markerfmt='ro', basefmt=" ")
+            else: max = 0
+            if len(negative_values) > 0 : 
+                min = np.min(negative_values)
+                ax[i].stem(negative_time, negative_values, linefmt='g-', markerfmt='go', basefmt=" ")
+            else: min = 0
+            ax[i].vlines(processor.I[1] * (int(len(self.merged_data) / self.fs / len(DI_values))+1), ymin=min, ymax=max, color='grey', linestyle='--')
+            ax[i].vlines(processor.I[2] * (int(len(self.merged_data) / self.fs / len(DI_values))+1), ymin=min, ymax=max, color='grey', linestyle='--')
+            ax[i].vlines(processor.I[0] * (int(len(self.merged_data) / self.fs / len(DI_values))+1), ymin=min, ymax=max, color='red', linestyle='--', label='damage')
             
             ax[i].set_ylabel('DI')                
             ax[i].set_title(f'L = {labels[i]} [s]')
@@ -125,7 +133,7 @@ class Yellow:
             
         ax[-1].set_xlabel('Time [s]')
         fig.tight_layout()
-        save_figure(fig, f"NI_CB_DI", f"loc_{self.location}_S{self.S}_L_vary_p_{len(self.merged_data[0])}", format='pdf')
+        save_figure(fig, f"NI_CB_DI", f"loc_{self.location}_S{self.S}_L_vary_p_{len(self.merged_data[0])}_dam{dam+1}", format='pdf')
 
     def detect_damages(self, DI_ALL):
         """
@@ -158,12 +166,12 @@ class Yellow:
         P1, P2, P3 = self.analyzer.compute_pp_index()
 
         # Peak picking 
-        band = (1, 30)
+        band = (1e-10, 30)
         peak_picker = PeakPicker(self.analyzer)
         peaks, _ = peak_picker.identify_peaks_2(S_PSD[:, 0], U_PSD, band=band, distance=1, mac_threshold=0.95, n_modes=4, p=16, dt=1/self.fs)
-
-        visualizer.plot_sigmas(freqs, S_PSD, peaks, folder_name, filename='PSD_SVD_method0', plot_smooth=False, band=(1, 30))
-        visualizer.plot_pp_index(freqs, [P1, P2, P3], peaks, folder_name, filename='PP_indices_method0', plot_smooth=False, band=band)
+        print("Detected peaks: ", freqs[peaks.astype(int)])
+        visualizer.plot_sigmas(freqs, S_PSD, peaks, folder_name, filename='PSD_SVD', plot_smooth=False, band=band, legend=False)
+        visualizer.plot_pp_index(freqs, [P1, P2, P3], peaks, folder_name, filename='PP_indices', plot_smooth=False, band=band)
             
  
     @staticmethod

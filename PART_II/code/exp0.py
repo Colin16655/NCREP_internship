@@ -22,7 +22,7 @@ folder_path, location = "data/Lello/Lello_2023_07_10_WholeDay", "Lello_2023_07_1
 # folder_path, location = "data/Lello/LelloNight_Jul23_Apr24", "LelloNight_Jul23_Apr24_stairs"
 
 S = 5                            # Number of SDOs per time window
-Ls = [6000*i for i in range(1, 12)]                            # * 0.01 seconds, so 1 to 11 minutes
+Ls = [6000*i for i in range(11, 22)]                            # * 0.01 seconds, so 1 to 11 minutes
 selected_indices = [3, 4, 5, 6]  # Indices of the selected sensors : stair
 ### USER ###
 

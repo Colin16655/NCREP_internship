@@ -106,10 +106,10 @@ class ProcessFolder:
         negative_time = time[negative_indices]
 
         # Plot the positive DI values in red on the stem plot
-        ax[3].stem(positive_time, positive_values, linefmt='r-', markerfmt='ro', basefmt=" ", use_line_collection=True)
+        if len(positive_time) > 0: ax[3].stem(positive_time, positive_values, linefmt='r-', markerfmt='ro', basefmt=" ", use_line_collection=True)
 
         # Plot the negative DI values in green on the stem plot
-        ax[3].stem(negative_time, negative_values, linefmt='g-', markerfmt='go', basefmt=" ", use_line_collection=True)
+        if len(negative_time) > 0: ax[3].stem(negative_time, negative_values, linefmt='g-', markerfmt='go', basefmt=" ", use_line_collection=True)
 
         # ax[0].set_ylabel(f'Accel. [mG]')
         ax[0].set_ylabel('NI')
