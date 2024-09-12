@@ -50,11 +50,11 @@ plt.rcParams["figure.autolayout"] = True
 # names = ["M_0_0_0", "M_0_0_1", "M_0_0_2"]
 # model_name = "M_0_0"
 
-paths = ["data/Alfredo/M_2_0_0_0_bis/subset_signal.txt",
-         "data/Alfredo/M_2_0_1_0_bis/subset_signal.txt",
-         "data/Alfredo/M_2_0_2_bis/subset_signal.txt",
-         "data/Alfredo/M_2_0_3_bis/subset_signal.txt", 
-         "data/Alfredo/M_2_0_4_bis/subset_signal.txt"]
+paths = ["data/Alfredo/M_2_0_0/subset_signal.txt",
+         "data/Alfredo/M_2_0_1/subset_signal.txt",
+         "data/Alfredo/M_2_0_2/subset_signal.txt",
+         "data/Alfredo/M_2_0_3/subset_signal.txt", 
+         "data/Alfredo/M_2_0_4/subset_signal.txt"]
 names = ["M_2_0_0", "M_2_0_1", "M_2_0_2", "M_2_0_3", "M_2_0_4"]
 model_name = "M_2_0"
 

@@ -37,11 +37,11 @@ paths = ["data/Alfredo/M_0_0_0_ambient/subset_signal.txt",
          "data/Alfredo/M_1_0_0_ambient_2m/subset_signal.txt", 
          "data/Alfredo/M_1_0_1_ambient_2m/subset_signal.txt", 
          "data/Alfredo/M_1_0_2_ambient_2m/subset_signal.txt",
-         "data/Alfredo/M_2_0_0_0_bis/subset_signal.txt",
-         "data/Alfredo/M_2_0_1_0_bis/subset_signal.txt",
-         "data/Alfredo/M_2_0_2_bis/subset_signal.txt",
-         "data/Alfredo/M_2_0_3_bis/subset_signal.txt", 
-         "data/Alfredo/M_2_0_4_bis/subset_signal.txt"]
+         "data/Alfredo/M_2_0_0/subset_signal.txt",
+         "data/Alfredo/M_2_0_1/subset_signal.txt",
+         "data/Alfredo/M_2_0_2/subset_signal.txt",
+         "data/Alfredo/M_2_0_3/subset_signal.txt", 
+         "data/Alfredo/M_2_0_4/subset_signal.txt"]
 
 names = ["M_0_0_0", "M_0_0_1", "M_0_0_2", "M_0_1_1", "M_0_1_2", "M_1_0_0", "M_1_0_1", "M_1_0_2", "M_1_0_3", "M_1_1_2", "M_1_0_0_2m", "M_1_0_1_2m", "M_1_0_2_2m", "M_2_0_0", "M_2_0_1", "M_2_0_2", "M_2_0_3", "M_2_0_4"]
 labels = ["$x_2$", "$y_2$", "$x_1$", "$y_1$"]
