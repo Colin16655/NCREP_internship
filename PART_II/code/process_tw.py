@@ -109,4 +109,4 @@ class ProcessTW:
         ax.set_xticklabels(range(1, self.S+1))
         ax.set_yticklabels(range(1, self.S+1))
         fig.tight_layout()
-        save_figure(fig, f"D_{idx}", folder_name, format='png')
+        save_figure(fig, f"D_{idx}", folder_name, output_dir=r'PART_II/results', format='png')

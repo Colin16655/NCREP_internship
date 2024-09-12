@@ -28,7 +28,7 @@ selected_indices = [3, 4, 5, 6]
 scaling_factors = np.array([0.4035*1000, 0.4023*1000, 0.4023*1000, 0.4023*1000, 0.4015*1000, 0.4014*1000, 0.4007*1000, 0.4016*1000])[selected_indices]
 
 # Load the data
-loader = DataLoader(selected_indices, folder_path=folder_path, batch_size=10, scaling_factors=scaling_factors)
+loader = DataLoader(selected_indices, folder_path=folder_path, batch_size=136, scaling_factors=scaling_factors)
 time, data = loader[0]
 print("Time shape:", time.shape)
 print("Data shape:", data.shape)
@@ -41,5 +41,5 @@ folder_name = f"exp0_loc_{location}_wind_{time_window_size}"
 visualizer = Visualizer(time, output_dir="PART_I/results")
 labels=["Base X", "Base Y", "Base Z", "Stair 1 X", "Stair 1 Y", "Stair 1 Z", "Stair 2 Z", "Vitral Z"]
 labels = [labels[i] for i in selected_indices]
-visualizer.plot_data(data, "Original_sensor_data", folder_name, y_label="[A]", labels=labels)
-visualizer.plot_data(data, "Detrended_scaled_sensor_data", folder_name, y_label="[mG]", labels=labels)
+# visualizer.plot_data(data, "Original_sensor_data", folder_name, y_label="[A]", labels=labels)
+visualizer.plot_data(data, "Detrended_scaled_sensor_data", folder_name, y_label="[mG]", labels=labels, figwidth=12)

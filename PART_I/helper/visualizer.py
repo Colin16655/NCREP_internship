@@ -57,7 +57,7 @@ class Visualizer:
         else : figure.savefig(os.path.join(output_path, f"{file_name}.pdf"), format='pdf', bbox_inches='tight')
         plt.close(figure)
 
-    def plot_data(self, data, filename, folder_name="", y_label="Amplitude", labels=None, show=False):
+    def plot_data(self, data, filename, folder_name="", y_label="Amplitude", labels=None, show=False, figwidth=3.33):
         """
         Plots the time series data and saves the figure.
 
@@ -66,14 +66,14 @@ class Visualizer:
             filename (str): Filename of the plot.
             folder_name (str): Name of the folder where the figure will be saved. Defaults to "".
         """
-        fig, ax = plt.subplots(len(data[0]), 1, sharex=True, figsize=(3.33, 10/4*len(data[0])))
+        fig, ax = plt.subplots(len(data[0]), 1, sharex=True, figsize=(figwidth, 10/4*len(data[0])))
         for i in range(len(data[0])):
             if labels is not None : 
-                ax[i].plot(self.time, data[:, i], label=labels[i])
+                ax[i].plot(self.time[int(3/8*len(self.time)) : int(4/8*len(self.time))], data[int(3/8*len(self.time)) : int(4/8*len(self.time)), i], label=labels[i])
                 ax[i].legend()
             else : ax[i].plot(self.time, data[:, i])
             ax[i].set_ylabel(y_label)
-            ax[i].set_xlim(self.time[0], self.time[-1])
+            # ax[i].set_xlim(self.time[0], self.time[-1])
         ax[-1].set_xlabel("Time [s]")
         # fig.suptitle(filename)
         fig.tight_layout()
@@ -216,7 +216,7 @@ class Visualizer:
         if show:
             plt.show()
 
-    def plot_sigmas(self, frequencies, S_PSD, peaks, folder_name="", sigma=8, filename='PSD_SVD_results', plot_li=False, plot_smooth=True, show=False, band=(8,24), legend=True):
+    def plot_sigmas(self, frequencies, S_PSD, peaks, folder_name="", sigma=8, filename='PSD_SVD_results', plot_li=False, plot_smooth=True, show=False, band=(8,24), legend=True, ax=None):
         """
         Plots the singular values of the PSD matrix as a function of frequency and saves the figure.
 
@@ -238,7 +238,8 @@ class Visualizer:
             fig, ax = plt.subplots(2, 1, figsize=(10, 10))  # Adjusted figsize to accommodate additional plots
             ax0 = ax[0]
         else:
-            fig, ax0 = plt.subplots(1, 1, figsize=(5.5, 3))
+            if ax is not None: ax0 = ax
+            else: fig, ax0 = plt.subplots(1, 1, figsize=(5.5, 3))
 
         colors = self.get_color_array(num_singular_values)
 
@@ -263,7 +264,8 @@ class Visualizer:
 
             # Plot non-smoothed curves
             if plot_smooth: ax0.semilogy(freq_filtered, original_values_filtered, label=f'$\sigma_{i+1}$ (Raw)', linestyle='dotted', color=colors[i])
-            else: ax0.semilogy(freq_filtered, original_values_filtered, label=f'$\sigma_{i+1}$ (Raw)', linestyle='solid', color=colors[i])
+            else: 
+                ax0.semilogy(freq_filtered, original_values_filtered, label=f'$\sigma_{i+1}$ (Raw)', linestyle='solid', color=colors[i])
             # Plot smoothed curves
             if plot_smooth: ax0.semilogy(freq_filtered, filtered_values_filtered, linestyle='solid', color=colors[i])
 
@@ -285,7 +287,7 @@ class Visualizer:
         max_val += y_margin
 
         # Set y-limits based on min and max values within the frequency range
-        ax0.set_ylim(min_val, max_val)
+        # ax0.set_ylim(min_val, max_val)
         ax0.set_ylabel("Singular Value")
         if plot_li:
             ax[1].set_ylim(min_val, max_val)
@@ -295,14 +297,16 @@ class Visualizer:
             ax[1].legend(framealpha=0.5)
         else:
             ax0.set_xlim(freq_min, freq_max)
-            ax0.set_xlabel("Frequency [Hz]")
+            if ax is None: ax0.set_xlabel("Frequency [Hz]")
 
         if legend: ax0.legend(framealpha=0.5)
-        fig.tight_layout()
-        self._save_figure(fig, filename, folder_name)
-        if show: fig.show()
-
-    def plot_pp_index(self, freqs, PPS, peaks, folder_name="", filename='PP_indices_results', sigma=14, plot_smooth=True, show=False, band=(8,24)):
+        if ax is None: 
+            fig.tight_layout()
+            self._save_figure(fig, filename, folder_name)
+            if show: fig.show()
+        
+    def plot_pp_index(self, freqs, PPS, peaks, folder_name="", filename='PP_indices_results', 
+                      sigma=14, plot_smooth=True, show=False, band=(8,24), ax=None, legend=True, style='-'):
         """
         Plots the PP indices as a function of frequency and saves the figure.
 
@@ -320,7 +324,7 @@ class Visualizer:
         # Apply Gaussian smoothing
         PPS_smooth = [gaussian_filter1d(P, sigma=sigma) for P in PPS]
 
-        fig, ax = plt.subplots(figsize=(7, 4))
+        if ax is None : fig, ax = plt.subplots(figsize=(7, 4))
 
         # Plot non-smoothed and smoothed curves
         for i, P in enumerate(PPS):
@@ -338,13 +342,14 @@ class Visualizer:
 
         ax.set_ylabel("PP index", fontsize=18)
         ax.set_xlabel("Frequency [Hz]", fontsize=18)
-        ax.legend(framealpha=0.5)
+        if legend : ax.legend(framealpha=0.5)
         ax.set_xlim(band[0], band[1])
         ax.grid(True)
 
-        fig.tight_layout()
-        self._save_figure(fig, filename, folder_name)
-        if show: fig.show()
+        if ax is None:
+            fig.tight_layout()
+            self._save_figure(fig, filename, folder_name)
+            if show: fig.show()
 
     def plot_PCA(self, data, folder_name="", show=False):
         # Apply PCA

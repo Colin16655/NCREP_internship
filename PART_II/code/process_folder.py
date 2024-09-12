@@ -8,7 +8,7 @@ from tqdm import tqdm
 from utils import save_figure
 
 class ProcessFolder:
-    def __init__(self, S, L, selected_indices, folder_path, scaling_factors, location):
+    def __init__(self, S, L, k, selected_indices, folder_path, scaling_factors, location):
         """
         Initialize with the folder path containing time series data and the desired window size.
 
@@ -26,9 +26,9 @@ class ProcessFolder:
         self.location = location
         self.folder_name = f"loc_{self.location}_S{S}_L_{L}_p_{self.p}"
 
-        self.process()
+        self.process(k)
 
-    def process(self, k=3):
+    def process(self, k):
         """
         Process each batch, compute NI, CB, and DI, and store results.
         """
@@ -69,10 +69,10 @@ class ProcessFolder:
             inner_medians[i] = np.median(differences)
         
         # Outer median of the inner medians
-        std = 1.1926 * np.median(inner_medians) / np.sqrt(len(ni_values))
+        std = 1.1926 * np.median(inner_medians) / np.sqrt(self.S)
 
         degrees_of_freedom = self.S - 1
-        t_value = t.ppf(.99, degrees_of_freedom)  # 95% confidence interval
+        t_value = t.ppf(.99, degrees_of_freedom)  # 99% confidence interval
         return mean + t_value * std
 
     def plot(self, filename=f"NI_CB_DI", T=600):
@@ -122,4 +122,4 @@ class ProcessFolder:
 
         ax[-1].set_xlabel('Time Window')
         fig.tight_layout()
-        save_figure(fig, filename, self.folder_name, format='pdf')
+        save_figure(fig, filename, self.folder_name, output_dir=r"PART_II/results", format='pdf')

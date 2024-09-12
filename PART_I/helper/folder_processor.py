@@ -44,7 +44,7 @@ class FolderProcessor:
         self.n_files = len(self.loader)
         self.detected_freqs = np.full((self.n_channels, self.n_methods, self.n_files), np.nan)
 
-    def process(self):
+    def process(self, ylims=None):
         """
         Processes each batch of data from the folder, computes vibration frequencies, and stores them for plotting.
 
@@ -104,9 +104,9 @@ class FolderProcessor:
                         self.detected_freqs[j, i, idx] = val 
                     
 
-        self.plot_frequencies(show=False)
+        self.plot_frequencies(show=False, ylims=ylims)
 
-    def plot_frequencies(self, show=False):
+    def plot_frequencies(self, show=False, ylims=None):
         """
         Plots detected frequencies in specified frequency ranges.
 
@@ -139,6 +139,10 @@ class FolderProcessor:
             ax[i].legend()       
 
         ax[-1].set_xlabel('Time [h]')
+
+        if ylims is not None:
+            for i in range(self.n_channels):
+                ax[i].set_ylim(ylims[i])
 
         fig.tight_layout()
         if show: fig.show()

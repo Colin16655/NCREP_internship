@@ -1,7 +1,7 @@
 import os
 import matplotlib.pyplot as plt
 
-def create_output_dir(folder_name, output_dir=r"PART_II/results"):
+def create_output_dir(folder_name, output_dir):
     """
     Creates a directory for saving figures based on the provided folder name.
 
@@ -14,7 +14,7 @@ def create_output_dir(folder_name, output_dir=r"PART_II/results"):
         os.makedirs(path)
     return path
 
-def save_figure(fig, file_name, folder_name, format='pdf'):
+def save_figure(fig, file_name, folder_name, output_dir, format='pdf'):
     """
     Saves the figure in PDF or PNG formats.
 
@@ -23,7 +23,8 @@ def save_figure(fig, file_name, folder_name, format='pdf'):
         file_name (str): The base name for the saved files.
         folder_name (str): The folder where the files will be saved.
     """
-    output_path = create_output_dir(folder_name)
-    if format == 'png' : fig.savefig(os.path.join(output_path, f"{file_name}.png"), bbox_inches='tight')
-    else : fig.savefig(os.path.join(output_path, f"{file_name}.pdf"), format='pdf', bbox_inches='tight')
+    output_path = create_output_dir(folder_name, output_dir)
+    file_path = os.path.join(output_path, f"{file_name}.{format}")
+    
+    fig.savefig(file_path, format=format, bbox_inches='tight')
     plt.close(fig)

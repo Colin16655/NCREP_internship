@@ -2,11 +2,13 @@ from yellow import Yellow
 import numpy as np
 from tqdm import tqdm
 
-# Add the directory containing the package to sys.path
-# package_path = '/home/boubou/Documents/NCREP_internship/PART_I/helper'
-# sys.path.append(package_path)
+import sys
 
-from visualizer import Visualizer
+# Add the directory containing the package to sys.path
+package_path = '/home/boubou/Documents/NCREP_internship/PART_I'
+sys.path.append(package_path)
+
+from helper.visualizer import Visualizer
 
 # Set rcParams to customize plot appearance
 import matplotlib.pyplot as plt
@@ -33,6 +35,7 @@ paths = ["data/Yellow/Ambient/shm01a.mat",
 
 ## USER 
 S = 5
+k = 2
 Ls = [200 * (20+i) for i in range(1, 12)] # 200 for 1s
 dams = np.arange(0,8)
 ## USER
@@ -42,7 +45,7 @@ folder_name = f"exp1_loc_Yellow_S{S}_L_vary_p_{16}"
 # Frequency domain analysis to identify the modal frequencies
 
 
-yellow = Yellow(paths, S)
+yellow = Yellow(paths, S, k)
 yellow.get_data()
 yellow.plot_acc(folder_name=folder_name)
 for dam in tqdm(dams, desc="Processing"): 

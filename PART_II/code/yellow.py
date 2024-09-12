@@ -8,17 +8,18 @@ import sys
 import os
 
 # Add the directory containing the package to sys.path
-package_path = '/home/boubou/Documents/NCREP_internship/PART_I/helper'
+package_path = '/home/boubou/Documents/NCREP_internship/PART_I'
 sys.path.append(package_path)
 
 # import the package
-from processor import ModalFrequencyAnalyzer, PeakPicker
-from visualizer import Visualizer
+from helper.processor import ModalFrequencyAnalyzer, PeakPicker
+from helper.visualizer import Visualizer
 
 class Yellow:
-    def __init__(self, paths, S, location="Yellow"):
+    def __init__(self, paths, S, k, location="Yellow"):
         self.paths = paths
         self.S = S
+        self.k = k
         self.names = ["DA01", "DA02", "DA03", "DA04", "DA05", "DA06", "DA07", "DA08", "DA09", "DA10", "DA11", "DA12", "DA13", "DA14", "DA15", "DA16"]
         self.ref_data = None
         self.dam_data = None
@@ -92,7 +93,7 @@ class Yellow:
         DI_ALL_valuses = []
 
         for i, L in enumerate(Ls):
-            processor = ProcessArray(self.S, L, self.merged_data, self.location, [i0, i1, i2])
+            processor = ProcessArray(self.S, L, self.k, self.merged_data, self.location, [i0, i1, i2])
 
             # plot NI, CB, DI
             processor.plot(f"NI_CB_DI_L_{labels[i]}", len(self.merged_data) / self.fs)
@@ -172,7 +173,6 @@ class Yellow:
         print("Detected peaks: ", freqs[peaks.astype(int)])
         visualizer.plot_sigmas(freqs, S_PSD, peaks, folder_name, filename='PSD_SVD', plot_smooth=False, band=band, legend=False)
         visualizer.plot_pp_index(freqs, [P1, P2, P3], peaks, folder_name, filename='PP_indices', plot_smooth=False, band=band)
-            
  
     @staticmethod
     def _load_mat_file(relative_path):

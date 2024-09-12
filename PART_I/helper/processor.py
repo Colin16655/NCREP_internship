@@ -3,7 +3,7 @@ from scipy import signal
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
 import PyOMA as oma
-from visualizer import Visualizer
+from helper.visualizer import Visualizer
 import os
 
 class ModalFrequencyAnalyzer:
@@ -39,7 +39,7 @@ class ModalFrequencyAnalyzer:
         self.P2 = None
         self.P3 = None
 
-    def compute_fft(self, output_dir, filename=None, band=None):
+    def compute_fft(self, output_dir=None, filename=None, band=None):
         """
         Computes the FFT of the data.
 
@@ -407,7 +407,7 @@ class PeakPicker:
                 
         return np.unique(np.array(selected_peaks))
 
-    def identify_peaks_2(self, S, U, band=(8, 24), distance=2, mac_threshold=0.9, n_modes=4, n_mem=4, results_prev=None, p=None, dt=None, output_dir='trash', folder_name=''):
+    def identify_peaks_2(self, S, U, band=(8, 24), distance=2, mac_threshold=0.9, n_modes=4, n_mem=4, results_prev=None, p=None, dt=None, output_dir='trash', folder_name='', name=''):
         """
         Detects peaks within a specified frequency band by dividing the given frequency domain into similar mode ranges using
         the MAC (Modal Assurance Criterion) matrix. The function then selects the argmax within the ranges that best match 
@@ -519,11 +519,12 @@ class PeakPicker:
             self.idx_method2 += 1
 
         # Uncomment the following line to enable plotting for debugging.
-        if p == 0 or p == 20: self.plot_debug(band, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt, output_dir=output_dir, folder_name=folder_name)
+        if p == 0 or p == 20: 
+            self.plot_debug(band, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt, output_dir=output_dir, folder_name=folder_name, name=name)
 
         return selected_peaks, results
 
-    def plot_debug(self, band, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt, output_dir='trash', folder_name=""):
+    def plot_debug(self, band, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt, output_dir='trash', folder_name="", name=""):
         """
         Plots the signal with detected ranges and the modified MAC matrix for debugging purposes.
 
@@ -586,8 +587,8 @@ class PeakPicker:
         fig1.suptitle("Time = " + str(time) + "h", fontsize=16)
         fig1.tight_layout()
         vis = Visualizer(None, output_dir=output_dir)
-        vis._save_figure(fig1, 'MAC_Matrix' + str(p), folder_name, format='pdf')
-        vis._save_figure(fig0, 'PSD' + str(p), folder_name, format='pdf')
+        vis._save_figure(fig1, 'MAC_Matrix' + str(p) + name, folder_name, format='pdf')
+        vis._save_figure(fig0, 'PSD' + str(p) + name, folder_name, format='pdf')
 
     def identify_peaks_pyoma(self):
         data = self.analyzer.data
