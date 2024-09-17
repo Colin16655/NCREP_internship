@@ -407,7 +407,9 @@ class PeakPicker:
                 
         return np.unique(np.array(selected_peaks))
 
-    def identify_peaks_2(self, S, U, band=(8, 24), distance=2, mac_threshold=0.9, n_modes=4, n_mem=4, results_prev=None, p=None, dt=None, output_dir='trash', folder_name='', name=''):
+    def identify_peaks_2(self, S, U, band=(8, 24), distance=2, mac_threshold=0.9, n_modes=4, n_mem=4, 
+                         results_prev=None, p=None, dt=None, output_dir='trash', folder_name='', name='',
+                         plotdebug=False):
         """
         Detects peaks within a specified frequency band by dividing the given frequency domain into similar mode ranges using
         the MAC (Modal Assurance Criterion) matrix. The function then selects the argmax within the ranges that best match 
@@ -519,7 +521,7 @@ class PeakPicker:
             self.idx_method2 += 1
 
         # Uncomment the following line to enable plotting for debugging.
-        if p == 0 or p == 20: 
+        if p == 0 or p == 20 or plotdebug: 
             self.plot_debug(band, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt, output_dir=output_dir, folder_name=folder_name, name=name)
 
         return selected_peaks, results

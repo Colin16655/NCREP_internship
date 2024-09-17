@@ -192,6 +192,108 @@ class Alfredo:
         visualizer.plot_sigmas(freqs, S_PSD, peaks, folder_name, filename=filename1, plot_smooth=False, band=band, legend=False, ax=ax_psd)
         visualizer.plot_pp_index(freqs, [P1, P2, P3], peaks, folder_name, filename=filename2, plot_smooth=False, band=band, ax=ax_pp, legend=False, style=style)
 
+    def apply_freq_analysis_PART_I(self, pp_args, batchsize, ranges_display, methods, folder_name):
+        analyzer = ModalFrequencyAnalyzer(dt=1/self.fs)
+        peak_picker = PeakPicker(analyzer)
+        num_batches = len(self.merged_data) // batchsize
+
+        detected_freqs = np.full((len(ranges_display), 1, num_batches), np.nan)
+        f_window = (ranges_display[0][0], ranges_display[-1][-1])
+
+        results = None
+        for idx in range(num_batches):
+            start_idx = idx * batchsize
+            end_idx = min((idx + 1) * batchsize, len(self.merged_data))
+            analyzer.data = self.merged_data[start_idx:end_idx]
+            # Computation to initialize analyzer
+            analyzer.compute_psd_matrix(nperseg=pp_args['nperseg'])
+            analyzer.compute_coherence_matrix()
+            analyzer.perform_svd_coherence()
+            analyzer.perform_svd_psd()
+            analyzer.compute_pp_index()
+            for i, method in enumerate(methods):
+                # Compute frequencies (assuming this returns a numpy array of frequencies)
+                if method == 0:
+                    label = 'method 0'
+                    peaks = peak_picker.identify_peaks_0(analyzer.P3, distance=pp_args['distance0']) 
+                elif method == 1:
+                    label = 'method 1'
+                    peaks = peak_picker.identify_peaks_1(analyzer.P3, analyzer.S_psd[:, 0], distance=pp_args['distance1'], sigma=pp_args['sigma'], ranges_to_check=pp_args['ranges_to_check']) 
+                elif method == 2 :
+                    label = 'method 2'
+                    peaks, results = peak_picker.identify_peaks_2(analyzer.S_psd[:, 0], analyzer.U_psd, band=f_window, distance=pp_args['distance2'], mac_threshold=pp_args['mac_threshold'],
+                                                                   n_modes=pp_args['n_modes'], n_mem=pp_args['n_mem'], results_prev=results, p=idx, dt=self.dt, plotdebug=True) 
+                elif method == 3:
+                    label = 'PyOMA'
+                    peaks = peak_picker.identify_peaks_pyoma()
+                elif method == 4 :
+                    label = 'method 2'
+                    peaks, results = peak_picker.identify_peaks_2(analyzer.P3, analyzer.U_psd, band=f_window, distance=pp_args['distance2'], mac_threshold=pp_args['mac_threshold'], 
+                                                                  n_modes=pp_args['n_modes'], n_mem=pp_args['n_mem'], results_prev=results, p=idx, dt=self.dt, plotdebug=True)
+                
+                else:
+                    raise ValueError(f"Unsupported method {method}")
+
+                if method != 3 : 
+                    mode_freqs = []
+                    for peak in peaks:
+                        if np.isnan(peak):
+                            mode_freqs.append(np.nan)
+                        else:
+                            peak = int(peak)
+                            mode_freqs.append(analyzer.freq_psd[peak])
+                    mode_freqs = np.array(mode_freqs)
+
+                else : mode_freqs = peaks
+                # print("m", mode_freqs)
+
+                for j, band in enumerate(ranges_display):
+                    band_min, band_max = band
+                    mask = (mode_freqs >= band_min) & (mode_freqs < band_max)
+                    # in case multiple modes are detected in the same band, we keep the closest to the previous value
+                    if len(mode_freqs[mask]) > 1 : 
+                        if not np.isnan(detected_freqs[j, i, idx]):
+                            val = mode_freqs[ np.argmin(np.abs(np.array(mode_freqs[mask]) - detected_freqs[j, i, idx])) ]
+                        else : val = mode_freqs[mask][0]
+                    else : val = mode_freqs[mask]
+                    if len(mode_freqs[mask]) > 0: 
+                        detected_freqs[j, i, idx] = val 
+                    
+        print(detected_freqs)
+
+        # ---- PLOT ----
+        file_duration = batchsize * self.dt / 60 # 1 file duration in minutes
+        time = np.linspace(0, num_batches*file_duration, len(detected_freqs[0][0])+1)
+
+        # Create the plots
+        visualizer = Visualizer(time, output_dir="PART_II/results")
+
+        fig, ax = plt.subplots(1, 1, figsize=(3.33, 3))
+
+        linestyles_list = ['-', '--', '-.', ':']
+        linestyles = [linestyles_list[i % len(linestyles_list)] for i in range(len(methods))]
+        colors_list = ['blue', 'green', 'red', 'black']  
+        colors = [colors_list[i % len(colors_list)] for i in range(len(methods))]
+
+        labels = np.array(["method 0", "method 1", "method 2 PSD", "PyOMA", "method 2 PP"])[methods]
+
+        for i in range(len(ranges_display)):
+            for j, (label, linestyle) in enumerate(zip(labels, linestyles)):
+                y = np.concatenate((detected_freqs[i][j], [np.nan]))
+                ax.step(time, y, where='post', label=label, color=colors_list[i], linestyle=linestyles_list[i])  
+            ax.set_ylabel('f (Hz)')
+            # ax.legend()       
+
+        ax.set_xlabel('Time [min]')
+
+        # if ylims is not None:
+        #     for i in range(self.n_channels):
+        #         ax[i].set_ylim(ylims[i])
+
+        fig.tight_layout()
+        print(folder_name)
+        visualizer._save_figure(fig, "Detected_Frequencies", folder_name)
+
     def _extract_data_from_txt(self, file_path):
         data_section = False
         data = []

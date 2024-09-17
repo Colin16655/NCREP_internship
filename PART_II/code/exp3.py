@@ -24,7 +24,8 @@ plt.rcParams['legend.loc'] = 'upper right'
 plt.rcParams['axes.titlesize'] = 11
 plt.rcParams["figure.autolayout"] = True
 
-paths = ["data/Alfredo/M_0_0_0_ambient/subset_signal.txt", 
+paths = [
+         "data/Alfredo/M_0_0_0_ambient/subset_signal.txt", 
          "data/Alfredo/M_0_0_1_ambient/subset_signal.txt", 
          "data/Alfredo/M_0_0_2_ambient/subset_signal.txt", 
          "data/Alfredo/M_0_1_1_ambient/subset_signal.txt", 
@@ -41,9 +42,19 @@ paths = ["data/Alfredo/M_0_0_0_ambient/subset_signal.txt",
          "data/Alfredo/M_2_0_1/subset_signal.txt",
          "data/Alfredo/M_2_0_2/subset_signal.txt",
          "data/Alfredo/M_2_0_3/subset_signal.txt", 
-         "data/Alfredo/M_2_0_4/subset_signal.txt"]
+         "data/Alfredo/M_2_0_4/subset_signal.txt", 
+         "data/Alfredo/M_3_0_0/subset_signal.txt",
+         "data/Alfredo/M_3_0_1/subset_signal.txt",
+         "data/Alfredo/M_3_0_2/subset_signal.txt",
+         "data/Alfredo/M_3_0_3/subset_signal.txt",
+         "data/Alfredo/M_3_0_4/subset_signal.txt",
+         "data/Alfredo/M_3_0_5/subset_signal.txt",
+         "data/Alfredo/M_3_0_6/subset_signal.txt"]
 
-names = ["M_0_0_0", "M_0_0_1", "M_0_0_2", "M_0_1_1", "M_0_1_2", "M_1_0_0", "M_1_0_1", "M_1_0_2", "M_1_0_3", "M_1_1_2", "M_1_0_0_2m", "M_1_0_1_2m", "M_1_0_2_2m", "M_2_0_0", "M_2_0_1", "M_2_0_2", "M_2_0_3", "M_2_0_4"]
+names = ["M_0_0_0", "M_0_0_1", "M_0_0_2", "M_0_1_1", "M_0_1_2", "M_1_0_0",
+         "M_1_0_1", "M_1_0_2", "M_1_0_3", "M_1_1_2", "M_1_0_0_2m", "M_1_0_1_2m", "M_1_0_2_2m",
+         "M_2_0_0", "M_2_0_1", "M_2_0_2", "M_2_0_3", "M_2_0_4",
+         "M_3_0_0", "M_3_0_1", "M_3_0_2", "M_3_0_3", "M_3_0_4", "M_3_0_5", "M_3_0_6"]
 labels = ["$x_2$", "$y_2$", "$x_1$", "$y_1$"]
 
 for i, path in enumerate(paths):

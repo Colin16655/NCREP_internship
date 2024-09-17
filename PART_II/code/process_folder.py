@@ -17,6 +17,8 @@ class ProcessFolder:
             window_size (int): The number of SDOs per time window.
         """
         self.loader = DataLoader(selected_indices, folder_path=folder_path, batch_size=L, scaling_factors=scaling_factors)
+        # for f in self.loader.get_files_list(folder_path):
+            # print(f)
         self.S = S
         self.p = len(selected_indices) # Number of sensors
         self.L = L
@@ -35,6 +37,11 @@ class ProcessFolder:
         analysis = ProcessTW(batch=None, S=self.S, p=self.p)
 
         for idx, batch in enumerate(tqdm(self.loader, desc="Processing Batches", unit="batch")):
+            # apply Hamming window to the batch
+            window = np.hamming(len(batch))
+            for i in range(batch.shape[1]):  # Loop through each channel
+                batch[:, i] = batch[:, i] * window
+            
             analysis.batch = batch
             analysis.compute_Q()
             if idx >= self.S-1:
