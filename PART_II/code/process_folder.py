@@ -28,20 +28,13 @@ class ProcessFolder:
         self.location = location
         self.folder_name = f"loc_{self.location}_S{S}_L_{L}_p_{self.p}"
 
-        self.process(k)
-
     def process(self, k):
         """
         Process each batch, compute NI, CB, and DI, and store results.
         """
         analysis = ProcessTW(batch=None, S=self.S, p=self.p)
 
-        for idx, batch in enumerate(tqdm(self.loader, desc="Processing Batches", unit="batch")):
-            # apply Hamming window to the batch
-            window = np.hamming(len(batch))
-            for i in range(batch.shape[1]):  # Loop through each channel
-                batch[:, i] = batch[:, i] * window
-            
+        for idx, batch in enumerate(tqdm(self.loader, desc="Processing Batches", unit="batch")):         
             analysis.batch = batch
             analysis.compute_Q()
             if idx >= self.S-1:

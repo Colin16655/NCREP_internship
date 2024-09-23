@@ -22,18 +22,23 @@ plt.rcParams["figure.autolayout"] = True
 folder_path, location = "data/Lello/LelloNight_Jul23_Apr24", "LelloNight_Jul23_Apr24_stairs"
 
 S = 5                          # Number of SDOs per time window
-k = 4                          # Number of clusters
-Ls = [60000] #, 65000, 120000, 125000] #[6000*i for i in range(1, 5)]                            # * 0.01 seconds, so 1 to 11 minutes
+k = 3                          # Number of clusters
+Ls = [50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000] # * 0.01 seconds, so 1 to 11 minutes
+# Ls = [55000, 65000, 75000, 85000, 95000, 105000, 115000, 125000] # * 0.01 seconds, so 1 to 11 minutes
 selected_indices = [3, 4, 5, 6]  # Indices of the selected sensors : stair
 ### USER ###
 
-fig, ax = plt.subplots(len(Ls), 1, figsize=(10, 1.2*len(Ls)), sharex=True)
+fig, ax = plt.subplots(len(Ls), 1, figsize=(10, max(3, 1.7*len(Ls))), sharex=True)
+if len(Ls) == 1:
+    ax = [ax]
 labels = [0.01*L for L in Ls]
 
 scaling_factors = np.array([0.4035*1000, 0.4023*1000, 0.4023*1000, 0.4023*1000, 0.4015*1000, 0.4014*1000, 0.4007*1000, 0.4016*1000])[selected_indices]
+
 for i, L in enumerate(Ls):
     folder_processor = ProcessFolder(S, L, k, selected_indices, folder_path, scaling_factors, location)
 
+    folder_processor.process(k)
     folder_processor.plot(f"NI_CB_DI_L_{labels[i]}", len(folder_processor.loader))
 
     DI_values = folder_processor.DI_values

@@ -40,6 +40,11 @@ plt.rcParams["figure.autolayout"] = True
 #          "data/Alfredo/M_0_0_2_ambient/subset_signal.txt"]
 # name  = "M_0_0"
 
+paths = ["data/Alfredo/M_0_0_0_ambient/subset_signal.txt", 
+         "data/Alfredo/M_0_1_1_ambient/subset_signal.txt", 
+         "data/Alfredo/M_0_1_2_ambient/subset_signal.txt"]
+name  = "M_0_1"
+
 
 # paths = ["data/Alfredo/M_2_0_0/subset_signal.txt",
 #          "data/Alfredo/M_2_0_1/subset_signal.txt",
@@ -53,14 +58,14 @@ plt.rcParams["figure.autolayout"] = True
 #          "data/Alfredo/M_1_0_2_ambient_2m/subset_signal.txt"]
 # name  = "M_1_0_2m"
 
-paths = ["data/Alfredo/M_3_0_0/subset_signal.txt",
-         "data/Alfredo/M_3_0_1/subset_signal.txt",
-         "data/Alfredo/M_3_0_2/subset_signal.txt",
-         "data/Alfredo/M_3_0_3/subset_signal.txt",
-         "data/Alfredo/M_3_0_4/subset_signal.txt",
-         "data/Alfredo/M_3_0_5/subset_signal.txt",
-         "data/Alfredo/M_3_0_6/subset_signal.txt"]
-name  = "M_3_0"
+# paths = ["data/Alfredo/M_3_0_0/subset_signal.txt",
+#          "data/Alfredo/M_3_0_1/subset_signal.txt",
+#          "data/Alfredo/M_3_0_2/subset_signal.txt",
+#          "data/Alfredo/M_3_0_3/subset_signal.txt",
+#          "data/Alfredo/M_3_0_4/subset_signal.txt",
+#          "data/Alfredo/M_3_0_5/subset_signal.txt",
+#          "data/Alfredo/M_3_0_6/subset_signal.txt"]
+# name  = "M_3_0"
 
 ## USER 
 S = 5
@@ -68,7 +73,7 @@ k = 2
 folder_name = f"exp2_loc_{name}_S_{S}_k_{k}_L_vary_p_{4}"
 Ls = [10000, 11000, 12000, 12500, 13000, 13500, 14000, 14500, 15000] # 20 for 1s
 
-ranges_display = [(1e-10,10), (10,20), (20,30)]
+ranges_display = [(1e-10,10), (10,25), (25,40)]
 pp_args = {'distance0' : 1,
            'distance1' : 1,  
            'distance2' : 1,

@@ -44,11 +44,11 @@ plt.rcParams["figure.autolayout"] = True
 # names = ["M_1_1_0", "M_1_1_1", "M_1_1_2", "M_1_1_3"]
 # model_name = "M_1_1"
 
-# paths = ["data/Alfredo/M_0_0_0_ambient/subset_signal.txt", 
-#          "data/Alfredo/M_0_0_1_ambient/subset_signal.txt", 
-#          "data/Alfredo/M_0_0_2_ambient/subset_signal.txt"]
-# names = ["M_0_0_0", "M_0_0_1", "M_0_0_2"]
-# model_name = "M_0_0"
+paths = ["data/Alfredo/M_0_0_0_ambient/subset_signal.txt", 
+         "data/Alfredo/M_0_0_1_ambient/subset_signal.txt", 
+         "data/Alfredo/M_0_0_2_ambient/subset_signal.txt"]
+names = ["M_0_0_0", "M_0_0_1", "M_0_0_2"]
+model_name = "M_0_0"
 
 # paths = ["data/Alfredo/M_2_0_0/subset_signal.txt",
 #          "data/Alfredo/M_2_0_1/subset_signal.txt",
@@ -58,15 +58,15 @@ plt.rcParams["figure.autolayout"] = True
 # names = ["M_2_0_0", "M_2_0_1", "M_2_0_2", "M_2_0_3", "M_2_0_4"]
 # model_name = "M_2_0"
 
-paths = ["data/Alfredo/M_3_0_0/subset_signal.txt",
-         "data/Alfredo/M_3_0_1/subset_signal.txt",
-         "data/Alfredo/M_3_0_2/subset_signal.txt",
-         "data/Alfredo/M_3_0_3/subset_signal.txt",
-         "data/Alfredo/M_3_0_4/subset_signal.txt",
-         "data/Alfredo/M_3_0_5/subset_signal.txt",
-         "data/Alfredo/M_3_0_6/subset_signal.txt"]
-names = ["M_3_0_0", "M_3_0_1", "M_3_0_2", "M_3_0_3", "M_3_0_4", "M_3_0_5", "M_3_0_6"]
-model_name = "M_3_0"
+# paths = ["data/Alfredo/M_3_0_0/subset_signal.txt",
+#          "data/Alfredo/M_3_0_1/subset_signal.txt",
+#          "data/Alfredo/M_3_0_2/subset_signal.txt",
+#          "data/Alfredo/M_3_0_3/subset_signal.txt",
+#          "data/Alfredo/M_3_0_4/subset_signal.txt",
+#          "data/Alfredo/M_3_0_5/subset_signal.txt",
+#          "data/Alfredo/M_3_0_6/subset_signal.txt"]
+# names = ["M_3_0_0", "M_3_0_1", "M_3_0_2", "M_3_0_3", "M_3_0_4", "M_3_0_5", "M_3_0_6"]
+# model_name = "M_3_0"
 
 colors, styles = ["r", "k", "b", "g"], ["--", "-", ":", "-."]
 labels = ["$x_2$", "$y_2$", "$x_1$", "$y_1$"]
@@ -74,7 +74,7 @@ labels = ["$x_2$", "$y_2$", "$x_1$", "$y_1$"]
 fig_fft, ax_fft = plt.subplots(len(paths), 1, figsize=(5, 2*len(paths)))
 fig_pp, ax_pp = plt.subplots(len(paths), 1, figsize=(5, 2*len(paths)))
 fig_psd, ax_psd = plt.subplots(len(paths), 1, figsize=(5, 2*len(paths)))
-band = (0.5, 50)
+band = (1e-10, 30)
 for i, path in enumerate(paths):
     alfredo = Alfredo([path], S=5, k=2)
     alfredo.get_data()
