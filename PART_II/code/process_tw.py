@@ -4,7 +4,18 @@ from sklearn_extra.cluster import KMedoids
 from utils import save_figure
 
 class ProcessTW:
+    """
+    Class to process a single time window of the statistical analysis
+    """
     def __init__(self, batch, S, p):
+        """
+        Initialize with a time series batch and parameters.
+
+        Args:
+            batch (np.ndarray): Array of time series data.
+            S (int): # of SDOs.
+            p (int): # of channels.
+        """
         self.batch = batch
         self.fft_batch = None
         self.Q = np.full((S, 2, 3, p), np.nan) # shape is (S, 2, 3, p)
@@ -61,6 +72,8 @@ class ProcessTW:
 
         Args:
             k (int): Number of clusters.
+        Returns:
+            np.ndarray: Computed cluster centers Q_k.
         """
         if self.D is None:
             raise ValueError("Distance matrix D is not computed. Please run compute_D() first.")
@@ -96,6 +109,7 @@ class ProcessTW:
 
         Args:
             foalder_name (str): Name of the folder to save the plot.
+            idx (int): Index for naming the plot file.
         """
         if self.D is None:
             raise ValueError("Distance matrix D is not computed. Please run compute_NI() first.")

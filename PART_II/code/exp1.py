@@ -1,3 +1,6 @@
+# For each damage case (dam), it applies statistical analysis for different time window lengths (Ls).
+# Finally, it applies frequency analysis and generates plots, saving the results to a specified folder.
+
 from yellow import Yellow
 import numpy as np
 from tqdm import tqdm
@@ -35,19 +38,17 @@ paths = ["data/Yellow/Ambient/shm01a.mat",
 
 ## USER 
 S = 5
-k = 2
+k = 3
 Ls = [200 * (20+i) for i in range(1, 12)] # 200 for 1s
 dams = np.arange(0,8)
 ## USER
 
-folder_name = f"exp1_loc_Yellow_S{S}_L_vary_p_{16}"
-
 # Frequency domain analysis to identify the modal frequencies
-
+folder_name = f"exp1_loc_Yellow_S{S}_L_vary_p_{16}"
 
 yellow = Yellow(paths, S, k)
 yellow.get_data()
 yellow.plot_acc(folder_name=folder_name)
-for dam in tqdm(dams, desc="Processing"): 
-    yellow.apply_stat_analysis(Ls, dam)
+for dam in tqdm(dams, desc="Processing"):
+    yellow.apply_stat_analysis(Ls, dam, folder_name)
 yellow.apply_freq_analysis(folder_name=folder_name)

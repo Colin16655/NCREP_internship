@@ -75,7 +75,7 @@ class ProcessFolder:
         t_value = t.ppf(.99, degrees_of_freedom)  # 99% confidence interval
         return mean + t_value * std
 
-    def plot(self, filename=f"NI_CB_DI", T=600):
+    def plot(self, filename, folder_name, T):
         """
         Plot the evolution of the NI, CB, NI+CB, DI indices over time.
         """
@@ -122,4 +122,4 @@ class ProcessFolder:
 
         ax[-1].set_xlabel('Time Window')
         fig.tight_layout()
-        save_figure(fig, filename, self.folder_name, output_dir=r"PART_II/results", format='pdf')
+        save_figure(fig, filename, folder_name, output_dir=r"PART_II/results", format='pdf')

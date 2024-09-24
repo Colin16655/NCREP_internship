@@ -1,3 +1,5 @@
+# Applies statistical analysis for different time window lengths (Ls).
+# Finally, it applies frequency analysis and generates plots, saving the results to a specified folder.
 
 from alfredo import Alfredo
 import numpy as np
@@ -40,10 +42,10 @@ plt.rcParams["figure.autolayout"] = True
 #          "data/Alfredo/M_0_0_2_ambient/subset_signal.txt"]
 # name  = "M_0_0"
 
-paths = ["data/Alfredo/M_0_0_0_ambient/subset_signal.txt", 
-         "data/Alfredo/M_0_1_1_ambient/subset_signal.txt", 
-         "data/Alfredo/M_0_1_2_ambient/subset_signal.txt"]
-name  = "M_0_1"
+# paths = ["data/Alfredo/M_0_0_0_ambient/subset_signal.txt", 
+#          "data/Alfredo/M_0_1_1_ambient/subset_signal.txt", 
+#          "data/Alfredo/M_0_1_2_ambient/subset_signal.txt"]
+# name  = "M_0_1"
 
 
 # paths = ["data/Alfredo/M_2_0_0/subset_signal.txt",
@@ -58,14 +60,14 @@ name  = "M_0_1"
 #          "data/Alfredo/M_1_0_2_ambient_2m/subset_signal.txt"]
 # name  = "M_1_0_2m"
 
-# paths = ["data/Alfredo/M_3_0_0/subset_signal.txt",
-#          "data/Alfredo/M_3_0_1/subset_signal.txt",
-#          "data/Alfredo/M_3_0_2/subset_signal.txt",
-#          "data/Alfredo/M_3_0_3/subset_signal.txt",
-#          "data/Alfredo/M_3_0_4/subset_signal.txt",
-#          "data/Alfredo/M_3_0_5/subset_signal.txt",
-#          "data/Alfredo/M_3_0_6/subset_signal.txt"]
-# name  = "M_3_0"
+paths = ["data/Alfredo/M_3_0_0/subset_signal.txt",
+         "data/Alfredo/M_3_0_1/subset_signal.txt",
+         "data/Alfredo/M_3_0_2/subset_signal.txt",
+         "data/Alfredo/M_3_0_3/subset_signal.txt",
+         "data/Alfredo/M_3_0_4/subset_signal.txt",
+         "data/Alfredo/M_3_0_5/subset_signal.txt",
+         "data/Alfredo/M_3_0_6/subset_signal.txt"]
+name  = "M_3_0"
 
 ## USER 
 S = 5

@@ -3,6 +3,15 @@ import numpy as np
 
 class DataLoader:
     def __init__(self, selected_indices, folder_path=None, batch_size=100, scaling_factors=None):
+        """
+        Loads and processes sensor data in batches, applying optional detrending and scaling.
+        
+        Args:
+            selected_indices (list): Indices of the sensor channels to select.
+            folder_path (str): Path to the folder containing the data files.
+            batch_size (int, optional): Number of data points per batch. Defaults to 100.
+            scaling_factors (list, optional): Factors to scale the data by. Defaults to None.
+        """
         self.selected_indices = selected_indices
         self.scaling_factors = scaling_factors
         self.batch_size = batch_size
@@ -11,12 +20,21 @@ class DataLoader:
             raise ValueError("folder_path must be provided.")
 
         self.file_paths = self.get_files_list(folder_path)
-        self.data_list = self._load_data(self.file_paths)  
+        self.data_list = self._load_data(self.file_paths) 
         self.current_idx = 0 
 
     def _load_data(self, file_paths):
+        """
+        Loads data from file paths, applies a window function, and selects the required channels.
+        
+        Args:
+            file_paths (list): Paths to the data files.
+        
+        Returns:
+            numpy.ndarray: Loaded and processed data.
+        """
         # apply Hamming window to the batch
-        window = np.hamming(60000)
+        window = np.ones(60000)
         data = [np.loadtxt(file_path, delimiter=';') * np.array([window]).T for file_path in file_paths]
         data = np.concatenate(data, axis=0) if len(file_paths) > 1 else data[0]
         data = np.array(data[:, 1:])[:, self.selected_indices]  # Exclude the time column
@@ -50,11 +68,14 @@ class DataLoader:
     @staticmethod
     def get_files_list(folder_path):
         """
-        Retrieves a list of all files in the specified folder, sorted in alphabetical order based on filenames.
-
+        Gets a list of files in the specified folder, sorted alphabetically.
+        
+        Args:
+            folder_path (str): Path to the folder.
+        
         Returns:
-            list of str: A list of file paths in the specified folder.
-
+            list of str: List of file paths.
+        
         Raises:
             FileNotFoundError: If the folder does not exist.
         """
@@ -68,13 +89,13 @@ class DataLoader:
 
     def _detrend_and_scale(self, data):
         """
-        Detrends and scales the sensor data using the specified scaling factors.
-
+        Detrends and scales the data using the provided scaling factors.
+        
         Args:
-            data (numpy.ndarray): The raw sensor data to be processed.
-
+            data (numpy.ndarray): Data to be processed.
+        
         Returns:
-            numpy.ndarray: The detrended and scaled sensor data.
+            numpy.ndarray: Detrended and scaled data.
         """
         detrended_data = data - np.mean(data, axis=0)
         if self.scaling_factors is not None:

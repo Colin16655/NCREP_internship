@@ -1,3 +1,7 @@
+# The code processes sensor data for different time window sizes (Ls) and clusters (k) using a specified number of SDOs (S).
+# For each time window size, it processes the data and computes DI (Damage Index) values, which are plotted over time.
+# Positive DI values are plotted in red and negative ones in green.
+
 from process_folder import ProcessFolder
 import numpy as np
 from utils import save_figure
@@ -18,11 +22,12 @@ plt.rcParams["figure.autolayout"] = True
 ### USER ###
 # folder_path, location = "data/Lello/Jul23", "Lello_Jul23_stairs"
 # folder_path, location = "data/Lello/Jul24", "Lello_Jul24_stairs"
-# folder_path, location = "data/Lello/Lello_2023_07_10_WholeDay", "Lello_2023_07_10_WholeDay_stairs"
-folder_path, location = "data/Lello/LelloNight_Jul23_Apr24", "LelloNight_Jul23_Apr24_stairs"
+folder_path, location = "data/Lello/Lello_2023_07_10_WholeDay", "Lello_2023_07_10_WholeDay_stairs"
+# folder_path, location = "data/Lello/LelloNight_Jul23_Apr24", "LelloNight_Jul23_Apr24_stairs"
 
 S = 5                          # Number of SDOs per time window
 k = 3                          # Number of clusters
+# Ls = [5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000] # * 0.01 seconds, so 1 to 11 minutes
 Ls = [50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000] # * 0.01 seconds, so 1 to 11 minutes
 # Ls = [55000, 65000, 75000, 85000, 95000, 105000, 115000, 125000] # * 0.01 seconds, so 1 to 11 minutes
 selected_indices = [3, 4, 5, 6]  # Indices of the selected sensors : stair

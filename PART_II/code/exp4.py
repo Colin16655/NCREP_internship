@@ -1,4 +1,6 @@
-## PLOT the Alfredo data
+# This code processes and plots frequency domain data from multiple Alfredo signal files.
+# The code detects damages in the signals and generates three types of plots: FFT, PP indices, and PSD.
+
 from utils import save_figure
 from alfredo import Alfredo
 import numpy as np

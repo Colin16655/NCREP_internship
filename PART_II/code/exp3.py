@@ -1,4 +1,6 @@
-## PLOT the Alfredo data
+# This code processes time-domain acceleration data from multiple signal files.
+# There is also commented-out code for performing frequency analysis on the signals.
+
 from utils import save_figure
 from alfredo import Alfredo
 import numpy as np
@@ -75,4 +77,3 @@ for i, path in enumerate(paths):
 
     # Frequency analysis
     # alfredo.apply_freq_analysis(folder_name="exp3_Alfredo_fqcy_domain", filename1='PSD_SVD'+names[i], filename2='PP_indices'+names[i], name=names[i])
-
