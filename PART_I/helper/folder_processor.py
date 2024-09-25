@@ -5,6 +5,7 @@ from helper.data_loader1 import DataLoader
 from helper.processor import ModalFrequencyAnalyzer, PeakPicker
 from helper.visualizer import Visualizer
 from tqdm import tqdm
+from helper.utils import save_figure
 
 class FolderProcessor:
     """
@@ -60,6 +61,24 @@ class FolderProcessor:
         for idx, (time, data) in enumerate(tqdm(self.loader, desc="Processing Batches", unit="batch")):
             self.analyzer.time = time
             self.analyzer.data = data
+            
+            ## START : GIF FFT
+            freq_fft, fft = self.analyzer.compute_fft(data, band=f_window)
+            # Save FFT plot for each channel (4 subplots)
+            fig, axs = plt.subplots(2, 2, figsize=(10, 8))
+            axs = axs.flatten()
+            LABELS = ['$X_1$', '$Y_1$', '$Z_1$', '$Z_2$']
+            for i in range(4):  # Assuming 4 channels
+                axs[i].semilogy(freq_fft, np.abs(fft[:, i]), label=LABELS[i])
+                axs[i].set_title(f'Time {np.round(idx*dt/2 +0.08, decimals=1)} h')
+                axs[i].set_xlabel('F (Hz)')
+                axs[i].set_ylabel('|.|')
+                axs[i].set_xlim([15, 20])#([15.8, 17.2])
+                axs[i].set_ylim([1e-1, 1e6])
+                axs[i].legend()
+            # Save plot
+            save_figure(fig, f"fft_{idx}", "exp3_fft_plots", output_dir=r'PART_I/results', format='png')
+            # END : GIF FFT
 
             # Computation to initialize analyzer
             self.analyzer.compute_psd_matrix(nperseg=self.pp_args['nperseg'])

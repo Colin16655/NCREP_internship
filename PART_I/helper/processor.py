@@ -2,7 +2,7 @@ import numpy as np
 from scipy import signal
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
-import PyOMA as oma
+# import PyOMA as oma
 from helper.visualizer import Visualizer
 import os
 
@@ -592,18 +592,18 @@ class PeakPicker:
         vis._save_figure(fig1, 'MAC_Matrix' + str(p) + name, folder_name, format='pdf')
         vis._save_figure(fig0, 'PSD' + str(p) + name, folder_name, format='pdf')
 
-    def identify_peaks_pyoma(self):
-        data = self.analyzer.data
-        fs = 1 / np.mean(np.diff(self.analyzer.time))
-        # Apply FDD method directly
-        FDD = oma.FDDsvp(data, fs)
+    # def identify_peaks_pyoma(self):
+    #     data = self.analyzer.data
+    #     fs = 1 / np.mean(np.diff(self.analyzer.time))
+    #     # Apply FDD method directly
+    #     FDD = oma.FDDsvp(data, fs)
 
-        # Define approximate peaks identified from the plot
-        FreQ = [11.29, 16.05, 22.54]
+    #     # Define approximate peaks identified from the plot
+    #     FreQ = [11.29, 16.05, 22.54]
 
-        # Extract the modal properties
-        # Res_FDD = oma.FDDmodEX(FreQ, FDD[1])
-        Res_EFDD = oma.EFDDmodEX(FreQ, FDD[1], method='EFDD')
-        # Res_FSDD = oma.EFDDmodEX(FreQ, FDD[1], method='FSDD', npmax = 35, MAClim=0.95)
-        plt.close()
-        return Res_EFDD['Frequencies'] # Res_FSDD['Frequencies']
+    #     # Extract the modal properties
+    #     # Res_FDD = oma.FDDmodEX(FreQ, FDD[1])
+    #     Res_EFDD = oma.EFDDmodEX(FreQ, FDD[1], method='EFDD')
+    #     # Res_FSDD = oma.EFDDmodEX(FreQ, FDD[1], method='FSDD', npmax = 35, MAClim=0.95)
+    #     plt.close()
+    #     return Res_EFDD['Frequencies'] # Res_FSDD['Frequencies']
