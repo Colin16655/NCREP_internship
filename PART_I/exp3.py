@@ -23,7 +23,7 @@ plt.rcParams["figure.autolayout"] = True
 # folder_path, location = "data/Lello/LelloNight_Jul23_Apr24", f"LelloNight_Jul23_Apr24_stairs" 
 folder_path, location = "data/Lello/Lello_2023_07_10_WholeDay", f"Lello_2023_07_10_WD_stairs"
 selected_indices = [3, 4, 5, 6]  # Indices of the selected sensors : stair
-batch_size = 6 # 1 3 6 for time window of 10 30 60 min
+batch_size = 1 # 1 3 6 for time window of 10 30 60 min
 ranges_display = [(8,13), (13,18), (18,24)]
 pp_args = {'distance0' : 1,
            'distance1' : 1,  

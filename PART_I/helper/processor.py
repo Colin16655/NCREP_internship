@@ -521,7 +521,7 @@ class PeakPicker:
             self.idx_method2 += 1
 
         # Uncomment the following line to enable plotting for debugging.
-        if p == 0 or p == 20 or plotdebug: 
+        if p%5 == 0 or plotdebug: 
             self.plot_debug(band, freqs, S, f_domain, MAC_modified, mode_ranges, selected_ranges, p, dt, output_dir=output_dir, folder_name=folder_name, name=name)
 
         return selected_peaks, results
@@ -550,17 +550,18 @@ class PeakPicker:
         fig0, ax0 = plt.subplots(1, 1, figsize=(7, 4))
         fig1, ax1 = plt.subplots(1, 1, figsize=(7, 7))
 
-        time = p*dt
+        time = p*dt + 0.08
         
         # Plot S array
         for min_idx, max_idx in np.array(mode_ranges)[selected_ranges]:
             ax0.semilogy(freqs[min_idx:max_idx+1], S[min_idx:max_idx+1], label=f'Mode Range: {freqs[min_idx]:.1f} to {freqs[max_idx]:.1f}')
         ax0.semilogy(freqs, S, color='black', linestyle='--', alpha=0.3)
         # ax0.scatter(freqs[raw_peaks], S[raw_peaks], color='red', label='Peaks')
-        ax0.set_xlim([band[0], band[1]])
+        ax0.set_xlim([10, band[1]])
+        ax0.set_ylim([1e-5, 1e1])
         ax0.set_xlabel('Frequency [Hz]')
         ax0.set_ylabel('Singular Value')
-        ax0.legend(framealpha=0.1)
+        # ax0.legend(framealpha=0.1)
         
         # Set the step size for selecting frequreqs, Sency labels (e.g., plot every 5th frequency)
         step_size = 15
@@ -584,7 +585,7 @@ class PeakPicker:
 
         ax1.set_xlabel('Frequency [Hz]')
         ax1.set_ylabel('Frequency [Hz]')
-        fig0.suptitle("Time = " + str(time) + "h", fontsize=16)
+        fig0.suptitle("Time = " + str(np.round(time, 1)) + "h", fontsize=16)
         fig0.tight_layout()
         fig1.suptitle("Time = " + str(time) + "h", fontsize=16)
         fig1.tight_layout()
