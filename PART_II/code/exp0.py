@@ -28,8 +28,8 @@ folder_path, location = "data/Lello/Lello_2023_07_10_WholeDay", "Lello_2023_07_1
 S = 5                          # Number of SDOs per time window
 k = 3                          # Number of clusters
 # Ls = [5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000] # * 0.01 seconds, so 1 to 11 minutes
-Ls = [50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000] # * 0.01 seconds, so 1 to 11 minutes
-# Ls = [55000, 65000, 75000, 85000, 95000, 105000, 115000, 125000] # * 0.01 seconds, so 1 to 11 minutes
+# Ls = [50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000] # * 0.01 seconds, so 1 to 11 minutes
+Ls = [55000, 65000, 75000, 85000, 95000, 105000, 115000, 125000] # * 0.01 seconds, so 1 to 11 minutes
 selected_indices = [3, 4, 5, 6]  # Indices of the selected sensors : stair
 ### USER ###
 

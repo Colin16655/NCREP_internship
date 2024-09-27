@@ -93,7 +93,8 @@ visualizer.plot_sigmas(freqs, S_PSD, peaks, folder_name, filename='PSD_SVD_metho
 visualizer.plot_pp_index(freqs, [P1, P2, P3], peaks, folder_name, filename='PP_indices_method0')
 
 mode_frequency, mode_shape = peak_picker.identify_mode_shapes(U_PSD, peaks)
-print(f"Identified mode frequencies, method 0: {mode_frequency} Hz")
+print(f"Identified mode frequencies, method 0: {mode_frequency} Hz ({peaks})")
+print(f"Mode shapes: {np.abs(mode_shape)}")
 
 # Visualize the PCA of the mode shapes
 # visualizer.plot_PCA(mode_shape, folder_name)
@@ -116,7 +117,10 @@ visualizer.plot_pp_index(freqs, [P1, P2, P3], peaks, folder_name, filename='PP_i
 visualizer.plot_coherence(freqs, coherence_matrix, peaks, folder_name, filename='Coherence')
 
 mode_frequency, mode_shape = peak_picker.identify_mode_shapes(U_PSD, peaks)
-print(f"Identified mode frequencies, method 1: {mode_frequency} Hz")
+print(f"\nIdentified mode 1 : f1 = {mode_frequency[0]} Hz and mode shape (acc) = {np.abs(mode_shape[0])}")
+print(f"Identified mode 2 : f2 = {mode_frequency[1]} Hz and mode shape (acc) = {np.abs(mode_shape[1])}")
+print(f"Identified mode 3 : f3 = {mode_frequency[2]} Hz and mode shape (acc) = {np.abs(mode_shape[2])}")
+
 
 # Visualize the PCA of the mode shapes
 # visualizer.plot_PCA(mode_shape, folder_name)

@@ -69,12 +69,12 @@ class FolderProcessor:
             axs = axs.flatten()
             LABELS = ['$X_1$', '$Y_1$', '$Z_1$', '$Z_2$']
             for i in range(4):  # Assuming 4 channels
-                axs[i].semilogy(freq_fft, np.abs(fft[:, i]), label=LABELS[i])
-                axs[i].set_title(f'Time {np.round(idx*dt/2 +0.08, decimals=1)} h')
+                axs[i].plot(freq_fft, np.abs(fft[:, i]), label=LABELS[i])
+                axs[i].set_title(f'Time {np.round(idx*dt +0.08, decimals=1)} h')
                 axs[i].set_xlabel('F (Hz)')
                 axs[i].set_ylabel('|.|')
-                axs[i].set_xlim([15, 20])#([15.8, 17.2])
-                axs[i].set_ylim([1e-1, 1e6])
+                axs[i].set_xlim([8, 24])
+                axs[i].set_ylim([0, 10000])
                 axs[i].legend()
             # Save plot
             save_figure(fig, f"fft_{idx}", "exp3_fft_plots", output_dir=r'PART_I/results', format='png')

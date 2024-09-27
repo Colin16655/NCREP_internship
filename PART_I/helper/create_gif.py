@@ -36,4 +36,4 @@ def create_gif_from_folder(image_folder, gif_filename='fft_animation.gif', fps=2
         duration=1000 // fps, loop=0
     )
 
-create_gif_from_folder(f'PART_I/results/exp3_fft_plots', gif_filename='fft_semilogy_15-20_60min.gif', fps=4)
+create_gif_from_folder(f'PART_I/results/exp3_fft_plots', gif_filename='fft_linear_8-24_10min.gif', fps=4)
