@@ -66,7 +66,7 @@ NCREP_internship/
 
 ## Parts overview
 
-### Part I — Lello Library (Brussels)
+### Part I — Lello Library (Porto)
 
 Accelerometers were placed at the **staircase** and **base** of the [Lello Library](https://en.wikipedia.org/wiki/Livraria_Lello) building. Eight sensors recorded 3-axis acceleration; this code analyses a subset of 4 (staircase sensors, indices 3–6). Recordings are batched in 10-minute `.csv` files sampled at ~100 Hz, with physical scaling factors converting raw ADC values to mG.
 
