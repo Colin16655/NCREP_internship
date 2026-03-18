@@ -1,18 +1,18 @@
 # NCREP Internship — Operational Modal Analysis & Structural Health Monitoring
 
-This repository contains the code produced during an internship at **NCREP** (or affiliated institution), focused on **Operational Modal Analysis (OMA)** of civil engineering structures using ambient vibration data. The work is divided into three independent parts, each targeting a different structure or analysis objective.
+This repository contains the code produced during an internship at **NCREP**, focused on **Operational Modal Analysis (OMA)** of civil engineering structures using ambient vibration data. The work is divided into three independent parts, each targeting a different structure or analysis objective.
 
 ---
 
 ## Scientific context
 
-The central problem is **identifying the natural frequencies and mode shapes of structures** without applying a known excitation — using only ambient vibrations (wind, traffic, footfall). This is known as **output-only modal analysis** or OMA.
+The central problem is **identifying the natural frequencies and mode shapes of structures** without applying a known excitation — using only ambient vibrations (people walking on the staircase typically). This is known as **Operational Modal Analysis** or OMA.
 
 The method implemented is **Frequency Domain Decomposition (FDD)**, which works as follows:
 
 1. Compute the **cross-spectral density (CSD) matrix** between all sensor pairs using Welch's method
 2. Apply **Singular Value Decomposition (SVD)** frequency by frequency
-3. Identify structural modes at frequencies where the first singular value peaks — these correspond to resonance
+3. Identify structural modes at frequencies where the first singular value peaks, these correspond to resonance
 4. Extract **mode shapes** from the associated left singular vectors
 
 A custom **peak-picking (PP) automation layer** is built on top of FDD, enabling both static single-window analysis and **temporal tracking** of modal frequencies across long recordings (whole-day datasets). A MAC-based (Modal Assurance Criterion) cluster method allows tracking mode identity across consecutive time windows.
@@ -84,7 +84,7 @@ Accelerometers were placed at the **staircase** and **base** of the [Lello Libra
 
 ### Part II — Alfredo Specimen
 
-A **laboratory reinforced concrete specimen** ("Alfredo") was tested under progressive damage states (M_0 = undamaged, M_1–M_3 = increasing damage). Four-channel accelerations (x₁, y₁, x₂, y₂) were recorded. Multiple sensor placements and ambient excitation conditions are available.
+A **1-meter-high steel specimen** ("Alfredo") was tested under progressive damage states (M_0 = undamaged, M_1–M_3 = increasing damage). Four-channel accelerations (x₁, y₁, x₂, y₂) were recorded. Multiple sensor placements and ambient excitation conditions are available.
 
 Two analysis approaches are applied:
 
@@ -134,7 +134,7 @@ PART_chimney/data/chimney/1.txt
 PART_chimney/data/chimney/2.txt
 ```
 
-Contact the repository author or refer to the internship report (`NCREP_report.pdf`) for data access.
+Contact the repository author for data access.
 
 ---
 
@@ -177,5 +177,5 @@ The full scientific report is available as `NCREP_report.pdf` in the root of thi
 
 ## Author
 
-**Colin** — Applied Mathematics / Actuarial Engineering  
+**Colin** — Applied Mathematics Engineer (clooscolin31@gmail.com)  
 Internship at NCREP  
